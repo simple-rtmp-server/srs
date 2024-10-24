@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -13,6 +13,7 @@ using namespace std;
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_core_autofree.hpp>
+#include <srs_core_deprecated.hpp>
 
 #include <srt/srt.h>
 

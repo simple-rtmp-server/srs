@@ -189,7 +189,7 @@ fi
 #####################################################################################
 # Use srs-cache from base image. See https://github.com/ossrs/dev-docker/blob/ubuntu20-cache/Dockerfile
 # Note that the cache for cygwin is not under /usr/local, but copy to objs instead.
-if [[ -d /usr/local/srs-cache/srs/trunk/objs && $(pwd) != "/usr/local/srs-cache/srs/trunk" ]]; then
+if [[ -d /usr/local/srs-cache/srs/trunk/objs && $(pwd) != "/usr/local/srs-cache/srs/trunk" && $SRS_BUILD_CACHE == YES ]]; then
     SOURCE_DIR=$(ls -d /usr/local/srs-cache/srs/trunk/objs/Platform-SRS${SRS_MAJOR}-* 2>/dev/null|head -n 1)
     if [[ -d $SOURCE_DIR ]]; then
         TARGET_DIR=${SRS_OBJS}/${SRS_PLATFORM} &&
@@ -205,7 +205,7 @@ fi
 #####################################################################################
 # Check for address sanitizer, see https://github.com/google/sanitizers
 #####################################################################################
-if [[ $SRS_SANITIZER == YES && $OS_IS_X86_64 == YES ]]; then
+if [[ $SRS_SANITIZER == YES ]]; then
     echo 'int main() { return 0; }' > ${SRS_OBJS}/test_sanitizer.c &&
     gcc -fsanitize=address -fno-omit-frame-pointer -g -O0 ${SRS_OBJS}/test_sanitizer.c \
         -o ${SRS_OBJS}/test_sanitizer 1>/dev/null 2>&1;
@@ -217,7 +217,7 @@ if [[ $SRS_SANITIZER == YES && $OS_IS_X86_64 == YES ]]; then
     fi
 fi
 
-if [[ $SRS_SANITIZER == YES && $OS_IS_X86_64 == YES && $SRS_SANITIZER_STATIC == NO ]]; then
+if [[ $SRS_SANITIZER == YES && $SRS_SANITIZER_STATIC == NO ]]; then
     echo 'int main() { return 0; }' > ${SRS_OBJS}/test_sanitizer.c &&
     gcc -fsanitize=address -fno-omit-frame-pointer -static-libasan -g -O0 ${SRS_OBJS}/test_sanitizer.c \
         -o ${SRS_OBJS}/test_sanitizer 1>/dev/null 2>&1;
@@ -228,7 +228,7 @@ if [[ $SRS_SANITIZER == YES && $OS_IS_X86_64 == YES && $SRS_SANITIZER_STATIC == 
     fi
 fi
 
-if [[ $SRS_SANITIZER == YES && $OS_IS_X86_64 == YES && $SRS_SANITIZER_LOG == NO ]]; then
+if [[ $SRS_SANITIZER == YES && $SRS_SANITIZER_LOG == NO ]]; then
     echo "#include <sanitizer/asan_interface.h>" > ${SRS_OBJS}/test_sanitizer.c &&
     echo "int main() { return 0; }" >> ${SRS_OBJS}/test_sanitizer.c &&
     gcc -fsanitize=address -fno-omit-frame-pointer -g -O0 ${SRS_OBJS}/test_sanitizer.c \
@@ -237,6 +237,18 @@ if [[ $SRS_SANITIZER == YES && $OS_IS_X86_64 == YES && $SRS_SANITIZER_LOG == NO 
     if [[ $ret -eq 0 ]]; then
         echo "libasan api found ok!";
         SRS_SANITIZER_LOG=YES
+    fi
+fi
+
+if [[ $SRS_SANITIZER == YES ]]; then
+    echo "#include <sanitizer/asan_interface.h>" > ${SRS_OBJS}/test_sanitizer.c &&
+    echo "int main() { __sanitizer_start_switch_fiber(NULL, NULL, 0); }" >> ${SRS_OBJS}/test_sanitizer.c &&
+    gcc -fsanitize=address -fno-omit-frame-pointer -g -O0 ${SRS_OBJS}/test_sanitizer.c \
+        -o ${SRS_OBJS}/test_sanitizer 1>/dev/null 2>&1;
+    ret=$?; rm -rf ${SRS_OBJS}/test_sanitizer*
+    if [[ $ret -eq 0 ]]; then
+        echo "libasan fiber switch api found ok!";
+        SRS_SANITIZER_FIBER_SWITCH=YES
     fi
 fi
 
@@ -254,6 +266,9 @@ fi
 # for osx, use darwin for st, donot use epoll.
 if [[ $SRS_OSX == YES ]]; then
     _ST_MAKE=darwin-debug && _ST_OBJ="DARWIN_`uname -r`_DBG"
+    if [[ $SRS_OSX_HAS_CLOCK_GETTIME != YES ]]; then
+        _ST_EXTRA_CFLAGS="$_ST_EXTRA_CFLAGS -DMD_OSX_NO_CLOCK_GETTIME"
+    fi
 fi
 # for windows/cygwin
 if [[ $SRS_CYGWIN64 = YES ]]; then
@@ -266,6 +281,13 @@ fi
 # Whether enable debug stats.
 if [[ $SRS_DEBUG_STATS == YES ]]; then
     _ST_EXTRA_CFLAGS="$_ST_EXTRA_CFLAGS -DDEBUG_STATS"
+fi
+# Whether to enable asan.
+if [[ $SRS_SANITIZER_FIBER_SWITCH == YES ]]; then
+    _ST_EXTRA_CFLAGS="$_ST_EXTRA_CFLAGS -DMD_ASAN"
+fi
+if [[ $SRS_SANITIZER == YES ]]; then
+    _ST_EXTRA_CFLAGS="$_ST_EXTRA_CFLAGS -fsanitize=address -fno-omit-frame-pointer"
 fi
 # Pass the global extra flags.
 if [[ $SRS_EXTRA_FLAGS != '' ]]; then
@@ -514,7 +536,7 @@ fi
 # libopus, for WebRTC to transcode AAC with Opus.
 #####################################################################################
 # For cross build, we use opus of FFmpeg, so we don't build the libopus.
-if [[ $SRS_RTC == YES && $SRS_FFMPEG_OPUS != YES ]]; then
+if [[ $SRS_RTC == YES && $SRS_USE_SYS_FFMPEG != YES && $SRS_FFMPEG_OPUS != YES ]]; then
     # Only build static libraries if no shared FFmpeg.
     if [[ $SRS_SHARED_FFMPEG != YES ]]; then
         OPUS_OPTIONS="--disable-shared --disable-doc"

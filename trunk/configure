@@ -122,13 +122,13 @@ fi
 
 # For Sanitizer
 # @doc: https://github.com/google/sanitizers/wiki/AddressSanitizer
-if [[ $SRS_SANITIZER == YES && $OS_IS_X86_64 == YES ]]; then
+if [[ $SRS_SANITIZER == YES ]]; then
     CXXFLAGS="${CXXFLAGS} -fsanitize=address -fno-omit-frame-pointer";
 fi
 
 # Start to generate the Makefile.
 cat << END >> ${SRS_OBJS}/Makefile
-GCC = ${SRS_TOOL_CC}
+CC = ${SRS_TOOL_CC}
 CXX = ${SRS_TOOL_CXX}
 AR = ${SRS_TOOL_AR}
 LINK = ${SRS_TOOL_CXX}
@@ -145,6 +145,10 @@ END
 # header(.h): add to ModuleLibIncs if need the specified library. for example, LibSTRoot
 # library(.a): add to ModuleLibFiles if binary need the specifeid library. for example, LibSTfile
 #
+
+# the link options, always use static link
+SrsLinkOptions="-ldl -lpthread";
+
 # st(state-threads) the basic network library for SRS.
 LibSTRoot="${SRS_OBJS}/st"; LibSTfile="${LibSTRoot}/libst.a"
 if [[ $SRS_SHARED_ST == YES ]]; then LibSTfile="-L${LibSTRoot} -lst"; fi
@@ -154,7 +158,10 @@ if [[ $SRS_RTC == YES ]]; then
   LibSrtpRoot="${SRS_OBJS}/srtp2/include"; LibSrtpFile="${SRS_OBJS}/srtp2/lib/libsrtp2.a"
   if [[ $SRS_USE_SYS_SRTP == YES ]]; then
       LibSrtpRoot=""; LibSrtpFile="libsrtp2.a"
-      if [[ $SRS_SHARED_SRTP == YES ]]; then LibSrtpFile="-lsrtp2"; fi
+      if [[ $SRS_SHARED_SRTP == YES ]]; then
+          LibSrtpFile=""; 
+          SrsLinkOptions="${SrsLinkOptions} -lsrtp2";
+      fi
   fi
 fi
 
@@ -175,7 +182,8 @@ if [[ $SRS_FFMPEG_FIT == YES ]]; then
         LibFfmpegRoot=""
         LibFfmpegFile="libavcodec.a libswresample.a libavutil.a libopus.a";
         if [[ $SRS_SHARED_FFMPEG == YES ]]; then
-            LibFfmpegFile="-lavcodec -lswresample -lavutil -lopus"
+            LibFfmpegFile=""
+            SrsLinkOptions="${SrsLinkOptions} -lavcodec -lswresample -lavutil -lopus";
         fi
     fi
 fi
@@ -201,12 +209,13 @@ if [[ $SRS_SRT == YES ]]; then
     if [[ $SRS_SHARED_SRT == YES ]]; then LibSRTfile="-L${SRS_OBJS}/srt/lib -lsrt"; fi
     if [[ $SRS_USE_SYS_SRT == YES ]]; then
         LibSRTRoot=""; LibSRTfile="libsrt.a"
-        if [[ $SRS_SHARED_SRT == YES ]]; then LibSRTfile="-lsrt"; fi
+        if [[ $SRS_SHARED_SRT == YES ]]; then 
+            LibSRTfile=""; 
+            SrsLinkOptions="${SrsLinkOptions} -lsrt";
+        fi
     fi
 fi
 
-# the link options, always use static link
-SrsLinkOptions="-ldl -lpthread";
 if [[ $SRS_SSL == YES && $SRS_USE_SYS_SSL == YES ]]; then
     SrsLinkOptions="${SrsLinkOptions} -lssl -lcrypto";
 fi
@@ -235,7 +244,7 @@ fi
 
 # For address sanitizer
 # @doc: https://github.com/google/sanitizers/wiki/AddressSanitizer
-if [[ $SRS_SANITIZER == YES && $OS_IS_X86_64 == YES ]]; then
+if [[ $SRS_SANITIZER == YES ]]; then
     SrsLinkOptions="${SrsLinkOptions} -fsanitize=address -fno-omit-frame-pointer";
     if [[ $SRS_SANITIZER_STATIC == YES ]]; then
         SrsLinkOptions="${SrsLinkOptions} -static-libasan";
@@ -247,6 +256,11 @@ if [[ $SRS_CYGWIN64 == YES && $SRS_FFMPEG_FIT == YES ]]; then
     SrsLinkOptions="${SrsLinkOptions} -lbcrypt";
 fi
 
+# User configed options.
+if [[ $SRS_EXTRA_LDFLAGS != '' ]]; then
+    SrsLinkOptions="${SrsLinkOptions} $SRS_EXTRA_LDFLAGS";
+fi
+
 #####################################################################################
 # Modules, compile each module, then link to binary
 #
@@ -254,8 +268,8 @@ fi
 MODULE_ID="CORE"
 MODULE_DEPENDS=()
 ModuleLibIncs=(${SRS_OBJS})
-MODULE_FILES=("srs_core" "srs_core_version" "srs_core_version5" "srs_core_autofree" "srs_core_performance"
-		"srs_core_time" "srs_core_platform")
+MODULE_FILES=("srs_core" "srs_core_version" "srs_core_version7" "srs_core_autofree" "srs_core_performance"
+		"srs_core_time" "srs_core_platform" "srs_core_deprecated")
 CORE_INCS="src/core"; MODULE_DIR=${CORE_INCS} . $SRS_WORKDIR/auto/modules.sh
 CORE_OBJS="${MODULE_OBJS[@]}"
 #
@@ -415,7 +429,7 @@ if [[ $SRS_SRT == YES ]]; then
     ModuleLibIncs+=(${LibSRTRoot})
     MODULE_OBJS="${MODULE_OBJS} ${SRT_OBJS[@]}"
 fi
-LINK_OPTIONS="${SrsLinkOptions}${SrsGprofLink}${SrsGperfLink}"
+LINK_OPTIONS="${LDFLAGS} ${SrsLinkOptions}${SrsGprofLink}${SrsGperfLink}"
 #
 # srs: srs(simple rtmp server) over st(state-threads)
 BUILD_KEY="srs" APP_MAIN="srs_main_server" APP_NAME="srs" . $SRS_WORKDIR/auto/apps.sh
@@ -450,7 +464,8 @@ if [[ $SRS_UTEST == YES ]]; then
     MODULE_FILES=("srs_utest" "srs_utest_amf0" "srs_utest_kernel" "srs_utest_core"
         "srs_utest_config" "srs_utest_rtmp" "srs_utest_http" "srs_utest_avc" "srs_utest_reload"
         "srs_utest_mp4" "srs_utest_service" "srs_utest_app" "srs_utest_rtc" "srs_utest_config2"
-        "srs_utest_protocol" "srs_utest_protocol2" "srs_utest_kernel2")
+        "srs_utest_protocol" "srs_utest_protocol2" "srs_utest_kernel2" "srs_utest_protocol3" 
+        "srs_utest_st")
     if [[ $SRS_SRT == YES ]]; then
         MODULE_FILES+=("srs_utest_srt")
     fi
@@ -479,7 +494,7 @@ if [[ $SRS_UTEST == YES ]]; then
     fi
     MODULE_DEPENDS=("CORE" "KERNEL" "PROTOCOL" "APP")
     MODULE_OBJS="${CORE_OBJS[@]} ${KERNEL_OBJS[@]} ${PROTOCOL_OBJS[@]} ${APP_OBJS[@]} ${SRT_OBJS[@]}"
-    LINK_OPTIONS="-lpthread ${SrsLinkOptions}" MODULE_DIR="src/utest" APP_NAME="srs_utest" . $SRS_WORKDIR/auto/utest.sh
+    LINK_OPTIONS="${LDFLAGS} -lpthread ${SrsLinkOptions}" MODULE_DIR="src/utest" APP_NAME="srs_utest" . $SRS_WORKDIR/auto/utest.sh
 fi
 
 #####################################################################################
@@ -496,16 +511,17 @@ mv ${SRS_MAKEFILE} ${SRS_MAKEFILE}.bk
 
 # generate phony header
 cat << END > ${SRS_MAKEFILE}
-.PHONY: default all _default install help clean destroy server srs_ingest_hls utest _prepare_dir $__mphonys
+.PHONY: default all _default install help clean destroy server utest _prepare_dir $__mphonys
 .PHONY: clean_srs clean_modules clean_openssl clean_srtp2 clean_opus clean_ffmpeg clean_st
 .PHONY: st ffmpeg
 
-GCC = ${SRS_TOOL_CC}
+CC = ${SRS_TOOL_CC}
 CXX = ${SRS_TOOL_CXX}
 AR = ${SRS_TOOL_AR}
 LINK = ${SRS_TOOL_LD}
 RANDLIB = ${SRS_TOOL_RANDLIB}
 CXXFLAGS = ${CXXFLAGS}
+LDFLAGS = ${LDFLAGS}
 
 # install prefix.
 SRS_PREFIX=${SRS_PREFIX}
@@ -528,7 +544,7 @@ default: server
 
 all: _default
 
-_default: server srs_ingest_hls utest $__mdefaults
+_default: server utest $__mdefaults
 
 help:
 	@echo "Usage: make <help>|<clean>|<destroy>|<server>|<utest>|<install>|<uninstall>"
@@ -591,7 +607,7 @@ clean_st:
 st:
 	@rm -f ${SRS_OBJS}/srs srs_utest
 	@\$(MAKE)\$(JOBS) -C ${SRS_OBJS}/${SRS_PLATFORM}/st-srs clean
-	@env EXTRA_CFLAGS="${_ST_EXTRA_CFLAGS}" \$(MAKE)\$(JOBS) -C ${SRS_OBJS}/${SRS_PLATFORM}/st-srs ${_ST_MAKE_ARGS} CC=\$(GCC) AR=\$(AR) LD=\$(LINK) RANDLIB=\$(RANDLIB)
+	@env EXTRA_CFLAGS="${_ST_EXTRA_CFLAGS}" \$(MAKE)\$(JOBS) -C ${SRS_OBJS}/${SRS_PLATFORM}/st-srs ${_ST_MAKE_ARGS} CC=\$(CC) CXX=\$(CXX) AR=\$(AR) LD=\$(LINK) RANDLIB=\$(RANDLIB)
 	@echo "Please rebuild srs by: make"
 
 ffmpeg:
@@ -633,9 +649,8 @@ install:
 	@mkdir -p \$(__REAL_INSTALL)
 	@echo "Now make the http root dir"
 	@mkdir -p \$(__REAL_INSTALL)/objs/nginx/html
-	@cp -f research/api-server/static-dir/index.html \$(__REAL_INSTALL)/objs/nginx/html
-	@cp -f research/players/crossdomain.xml \$(__REAL_INSTALL)/objs/nginx/html
-	@cp -f research/api-server/static-dir/favicon.ico \$(__REAL_INSTALL)/objs/nginx/html
+	@cp -f research/index.html \$(__REAL_INSTALL)/objs/nginx/html
+	@cp -f research/favicon.ico \$(__REAL_INSTALL)/objs/nginx/html
 	@cp -Rf research/players \$(__REAL_INSTALL)/objs/nginx/html/
 	@cp -Rf research/console \$(__REAL_INSTALL)/objs/nginx/html/
 	@cp -Rf 3rdparty/signaling/www/demos \$(__REAL_INSTALL)/objs/nginx/html/
@@ -831,6 +846,12 @@ if [[ $SRS_VALGRIND == YES ]]; then
 else
     echo -e "${GREEN}Note: The valgrind is disabled.${BLACK}"
 fi
+if [[ $SRS_SANITIZER == YES ]]; then
+    echo -e "${GREEN}The sanitizer is enabled.${BLACK}"
+else
+    echo -e "${GREEN}Note: The sanitizer is disabled.${BLACK}"
+fi
+
 # add each modules for application
 for SRS_MODULE in ${SRS_MODULES[*]}; do
     echo -e "${GREEN}Enable module: $SRS_MODULE${BLACK}"

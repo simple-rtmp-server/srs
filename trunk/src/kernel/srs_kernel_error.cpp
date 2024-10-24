@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -166,6 +166,22 @@ void asan_report_callback(const char* str)
             srs_error("%s, %s", log.c_str(), buf);
         }
     }
+}
+#endif
+
+#ifdef SRS_SANITIZER
+// This function return the default options for asan, before main() is called,
+// see https://github.com/google/sanitizers/wiki/AddressSanitizerFlags#run-time-flags
+//
+// Disable halt on errors by halt_on_error, only print messages, note that it still quit for fatal errors,
+// see https://github.com/google/sanitizers/wiki/AddressSanitizerFlags
+//
+// Disable the memory leaking detect for daemon by detect_leaks,
+// see https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
+//
+// Also disable alloc_dealloc_mismatch for gdb.
+extern "C" const char *__asan_default_options() {
+    return "halt_on_error=0:detect_leaks=0:alloc_dealloc_mismatch=0";
 }
 #endif
 

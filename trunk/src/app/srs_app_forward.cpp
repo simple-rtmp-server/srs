@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -94,7 +94,7 @@ srs_error_t SrsForwarder::on_publish()
 void SrsForwarder::on_unpublish()
 {
     trd->stop();
-    sdk->close();
+    if (sdk) sdk->close();
 }
 
 srs_error_t SrsForwarder::on_meta_data(SrsSharedPtrMessage* shared_metadata)
@@ -246,10 +246,9 @@ srs_error_t SrsForwarder::forward()
     srs_error_t err = srs_success;
     
     sdk->set_recv_timeout(SRS_CONSTS_RTMP_PULSE);
-    
-    SrsPithyPrint* pprint = SrsPithyPrint::create_forwarder();
-    SrsAutoFree(SrsPithyPrint, pprint);
-    
+
+    SrsUniquePtr<SrsPithyPrint> pprint(SrsPithyPrint::create_forwarder());
+
     SrsMessageArray msgs(SYS_MAX_FORWARD_SEND_MSGS);
     
     // update sequence header

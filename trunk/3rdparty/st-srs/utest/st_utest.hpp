@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: MIT */
-/* Copyright (c) 2013-2023 Winlin */
+/* Copyright (c) 2013-2024 The SRS Authors */
 
 #ifndef ST_UTEST_PUBLIC_HPP
 #define ST_UTEST_PUBLIC_HPP
@@ -44,7 +44,7 @@ struct ErrorObject {
 };
 extern std::ostream& operator<<(std::ostream& out, const ErrorObject* err);
 #define ST_ASSERT_ERROR(error, r0, message) if (error) return new ErrorObject(r0, message)
-#define ST_COROUTINE_JOIN(trd, r0) ErrorObject* r0 = NULL; SrsAutoFree(ErrorObject, r0); if (trd) st_thread_join(trd, (void**)&r0)
+#define ST_COROUTINE_JOIN(trd, r0) ErrorObject* r0 = NULL; if (trd) st_thread_join(trd, (void**)&r0); SrsUniquePtr<ErrorObject> r0_uptr(r0)
 #define ST_EXPECT_SUCCESS(r0) EXPECT_TRUE(!r0) << r0
 #define ST_EXPECT_FAILED(r0) EXPECT_TRUE(r0) << r0
 

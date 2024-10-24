@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -55,7 +55,7 @@ extern std::string srs_path_build_timestamp(std::string template_path);
 // @return an int error code.
 extern srs_error_t srs_kill_forced(int& pid);
 
-// Current process resouce usage.
+// Current process resource usage.
 // @see: man getrusage
 class SrsRusage
 {

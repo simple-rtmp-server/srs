@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -122,7 +122,7 @@ SrsRequest* SrsCoWorkers::find_stream_info(string vhost, string app, string stre
     return it->second;
 }
 
-srs_error_t SrsCoWorkers::on_publish(SrsLiveSource* s, SrsRequest* r)
+srs_error_t SrsCoWorkers::on_publish(SrsRequest* r)
 {
     srs_error_t err = srs_success;
     
@@ -140,7 +140,7 @@ srs_error_t SrsCoWorkers::on_publish(SrsLiveSource* s, SrsRequest* r)
     return err;
 }
 
-void SrsCoWorkers::on_unpublish(SrsLiveSource* s, SrsRequest* r)
+void SrsCoWorkers::on_unpublish(SrsRequest* r)
 {
     string url = r->get_stream_url();
     

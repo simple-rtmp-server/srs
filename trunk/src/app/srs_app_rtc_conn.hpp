@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -24,6 +24,7 @@
 #include <srs_protocol_conn.hpp>
 #include <srs_app_conn.hpp>
 #include <srs_app_async_call.hpp>
+#include <srs_core_autofree.hpp>
 
 #include <string>
 #include <map>
@@ -217,7 +218,7 @@ private:
     SrsRtcPLIWorker* pli_worker_;
 private:
     SrsRequest* req_;
-    SrsRtcSource* source_;
+    SrsSharedPtr<SrsRtcSource> source_;
     // key: publish_ssrc, value: send track to process rtp/rtcp
     std::map<uint32_t, SrsRtcAudioSendTrack*> audio_tracks_;
     std::map<uint32_t, SrsRtcVideoSendTrack*> video_tracks_;
@@ -343,7 +344,7 @@ private:
     SrsErrorPithyPrint* pli_epp;
 private:
     SrsRequest* req_;
-    SrsRtcSource* source;
+    SrsSharedPtr<SrsRtcSource> source_;
     // Simulators.
     int nn_simulate_nack_drop;
 private:

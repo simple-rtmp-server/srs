@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -162,6 +162,7 @@ public:
 public:
     virtual void dispose();
     virtual srs_error_t cycle();
+    srs_utime_t cleanup_delay();
 public:
     // Initalize the encoder.
     virtual srs_error_t initialize(SrsOriginHub* h, SrsRequest* r);

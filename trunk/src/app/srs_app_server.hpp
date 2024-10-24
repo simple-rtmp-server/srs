@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -234,8 +234,8 @@ public:
     virtual srs_error_t on_reload_listen();
 // Interface ISrsLiveSourceHandler
 public:
-    virtual srs_error_t on_publish(SrsLiveSource* s, SrsRequest* r);
-    virtual void on_unpublish(SrsLiveSource* s, SrsRequest* r);
+    virtual srs_error_t on_publish(SrsRequest* r);
+    virtual void on_unpublish(SrsRequest* r);
 };
 
 // The SRS server adapter, the master server.

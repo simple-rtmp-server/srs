@@ -7,6 +7,10 @@ assignees: ''
 
 ---
 
+!!! Before submitting a new bug report, please ensure you have searched for any existing bugs. Duplicate issues or 
+questions that are overly simple or already addressed in the documentation will be removed without any 
+response.
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -737,4 +737,10 @@ VOID TEST(KernelCodecTest, VideoFormatRbspNormal)
         ASSERT_EQ(nb_rbsp, (int)expect.size());
         EXPECT_TRUE(srs_bytes_equals(rbsp.data(), expect.data(), nb_rbsp));
     }
+}
+
+VOID TEST(KernelCodecTest, HEVCDuplicatedCode)
+{
+    EXPECT_NE(ERROR_HEVC_NALU_UEV, ERROR_STREAM_CASTER_HEVC_VPS);
+    EXPECT_NE(ERROR_HEVC_NALU_SEV, ERROR_STREAM_CASTER_HEVC_SPS);
 }

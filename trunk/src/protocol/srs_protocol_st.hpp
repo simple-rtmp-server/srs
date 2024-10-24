@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -19,6 +19,12 @@ typedef void* srs_netfd_t;
 typedef void* srs_thread_t;
 typedef void* srs_cond_t;
 typedef void* srs_mutex_t;
+
+
+#ifdef SRS_SANITIZER
+// Setup the primordial stack for asan detecting.
+void srs_set_primordial_stack(void* stack_top);
+#endif
 
 // Initialize ST, requires epoll for linux.
 extern srs_error_t srs_st_init();

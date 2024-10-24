@@ -55,7 +55,7 @@ jobs:
       # See https://github.com/cygwin/cygwin-install-action#parameters
       # Note that https://github.com/egor-tensin/setup-cygwin fails to install packages.
       - name: Setup Cygwin
-        uses: cygwin/cygwin-install-action@db475590d56881c6cef7b3f96f6f3dd9532ea1f4 # master
+        uses: cygwin/cygwin-install-action@006ad0b0946ca6d0a3ea2d4437677fa767392401 # master
         with:
           platform: x86_64
           packages: bash make gcc-g++ cmake automake patch pkg-config tcl unzip
@@ -190,15 +190,16 @@ jobs:
           docker run --rm -w /srs/trunk/3rdparty/srs-bench srs:test \
             ./objs/srs_blackbox_test -test.v -test.run '^TestFast' -test.parallel 64
           docker run --rm -w /srs/trunk/3rdparty/srs-bench srs:test \
-            ./objs/srs_blackbox_test -test.v -test.run '^TestSlow' -test.parallel 4
+            ./objs/srs_blackbox_test -test.v -test.run '^TestSlow' -test.parallel 1
       # For utest
       - name: Run SRS utest
         run: docker run --rm srs:test ./objs/srs_utest
       # For regression-test
       - name: Run SRS regression-test
         run: |
-          docker run --rm srs:test bash -c './objs/srs -c conf/regression-test.conf && \
-              cd 3rdparty/srs-bench && ./objs/srs_test -test.v && ./objs/srs_gb28181_test -test.v'
+          docker run --rm srs:test bash -c './objs/srs -c conf/regression-test.conf && sleep 10 && \
+              cd 3rdparty/srs-bench && (./objs/srs_test -test.v || (cat ../../objs/srs.log && exit 1)) && \
+              ./objs/srs_gb28181_test -test.v'
     runs-on: ubuntu-20.04
 
   coverage:

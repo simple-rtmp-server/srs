@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -31,10 +31,12 @@ using namespace std;
 SrsGoApiRtcPlay::SrsGoApiRtcPlay(SrsRtcServer* server)
 {
     server_ = server;
+    security_ = new SrsSecurity();
 }
 
 SrsGoApiRtcPlay::~SrsGoApiRtcPlay()
 {
+    srs_freep(security_);
 }
 
 
@@ -51,10 +53,9 @@ srs_error_t SrsGoApiRtcPlay::serve_http(ISrsHttpResponseWriter* w, ISrsHttpMessa
 {
     srs_error_t err = srs_success;
 
-    SrsJsonObject* res = SrsJsonAny::object();
-    SrsAutoFree(SrsJsonObject, res);
+    SrsUniquePtr<SrsJsonObject> res(SrsJsonAny::object());
 
-    if ((err = do_serve_http(w, r, res)) != srs_success) {
+    if ((err = do_serve_http(w, r, res.get())) != srs_success) {
         srs_warn("RTC error %s", srs_error_desc(err).c_str()); srs_freep(err);
         return srs_api_response_code(w, r, SRS_CONSTS_HTTP_BadRequest);
     }
@@ -71,8 +72,7 @@ srs_error_t SrsGoApiRtcPlay::do_serve_http(ISrsHttpResponseWriter* w, ISrsHttpMe
     hdr->set("Connection", "Close");
 
     // Parse req, the request json object, from body.
-    SrsJsonObject* req = NULL;
-    SrsAutoFree(SrsJsonObject, req);
+    SrsJsonObject* req_raw = NULL;
     if (true) {
         string req_json;
         if ((err = r->body_read_all(req_json)) != srs_success) {
@@ -84,8 +84,9 @@ srs_error_t SrsGoApiRtcPlay::do_serve_http(ISrsHttpResponseWriter* w, ISrsHttpMe
             return srs_error_new(ERROR_RTC_API_BODY, "invalid body %s", req_json.c_str());
         }
 
-        req = json->to_object();
+        req_raw = json->to_object();
     }
+    SrsUniquePtr<SrsJsonObject> req(req_raw);
 
     // Fetch params from req object.
     SrsJsonAny* prop = NULL;
@@ -216,16 +217,20 @@ srs_error_t SrsGoApiRtcPlay::serve_http(ISrsHttpResponseWriter* w, ISrsHttpMessa
     // Whether RTC stream is active.
     bool is_rtc_stream_active = false;
     if (true) {
-        SrsRtcSource* source = _srs_rtc_sources->fetch(ruc->req_);
-        is_rtc_stream_active = (source && !source->can_publish());
+        SrsSharedPtr<SrsRtcSource> source = _srs_rtc_sources->fetch(ruc->req_);
+        is_rtc_stream_active = (source.get() && !source->can_publish());
     }
 
     // For RTMP to RTC, fail if disabled and RTMP is active, see https://github.com/ossrs/srs/issues/2728
     if (!is_rtc_stream_active && !_srs_config->get_rtc_from_rtmp(ruc->req_->vhost)) {
-        SrsLiveSource* rtmp = _srs_sources->fetch(ruc->req_);
-        if (rtmp && !rtmp->inactive()) {
+        SrsSharedPtr<SrsLiveSource> live_source = _srs_sources->fetch(ruc->req_);
+        if (live_source.get() && !live_source->inactive()) {
             return srs_error_new(ERROR_RTC_DISABLED, "Disabled rtmp_to_rtc of %s, see #2728", ruc->req_->vhost.c_str());
         }
+    }
+
+    if ((err = security_->check(SrsRtcConnPlay, ruc->req_->ip, ruc->req_)) != srs_success) {
+        return srs_error_wrap(err, "RTC: security check");
     }
 
     if ((err = http_hooks_on_play(ruc->req_)) != srs_success) {
@@ -324,10 +329,12 @@ srs_error_t SrsGoApiRtcPlay::http_hooks_on_play(SrsRequest* req)
 SrsGoApiRtcPublish::SrsGoApiRtcPublish(SrsRtcServer* server)
 {
     server_ = server;
+    security_ = new SrsSecurity();
 }
 
 SrsGoApiRtcPublish::~SrsGoApiRtcPublish()
 {
+    srs_freep(security_);
 }
 
 // Request:
@@ -343,10 +350,9 @@ srs_error_t SrsGoApiRtcPublish::serve_http(ISrsHttpResponseWriter* w, ISrsHttpMe
 {
     srs_error_t err = srs_success;
 
-    SrsJsonObject* res = SrsJsonAny::object();
-    SrsAutoFree(SrsJsonObject, res);
+    SrsUniquePtr<SrsJsonObject> res(SrsJsonAny::object());
 
-    if ((err = do_serve_http(w, r, res)) != srs_success) {
+    if ((err = do_serve_http(w, r, res.get())) != srs_success) {
         srs_warn("RTC error %s", srs_error_desc(err).c_str()); srs_freep(err);
         return srs_api_response_code(w, r, SRS_CONSTS_HTTP_BadRequest);
     }
@@ -362,8 +368,7 @@ srs_error_t SrsGoApiRtcPublish::do_serve_http(ISrsHttpResponseWriter* w, ISrsHtt
     w->header()->set("Connection", "Close");
 
     // Parse req, the request json object, from body.
-    SrsJsonObject* req = NULL;
-    SrsAutoFree(SrsJsonObject, req);
+    SrsJsonObject* req_raw = NULL;
     if (true) {
         string req_json;
         if ((err = r->body_read_all(req_json)) != srs_success) {
@@ -375,8 +380,9 @@ srs_error_t SrsGoApiRtcPublish::do_serve_http(ISrsHttpResponseWriter* w, ISrsHtt
             return srs_error_new(ERROR_RTC_API_BODY, "invalid body %s", req_json.c_str());
         }
 
-        req = json->to_object();
+        req_raw = json->to_object();
     }
+    SrsUniquePtr<SrsJsonObject> req(req_raw);
 
     // Fetch params from req object.
     SrsJsonAny* prop = NULL;
@@ -501,6 +507,10 @@ srs_error_t SrsGoApiRtcPublish::serve_http(ISrsHttpResponseWriter* w, ISrsHttpMe
     SrsRtcConnection* session = NULL;
     if ((err = server_->create_session(ruc, local_sdp, &session)) != srs_success) {
         return srs_error_wrap(err, "create session");
+    }
+
+    if ((err = security_->check(SrsRtcConnPublish, ruc->req_->ip, ruc->req_)) != srs_success) {
+        return srs_error_wrap(err, "RTC: security check");
     }
 
     // We must do hook after stat, because depends on it.
@@ -763,12 +773,11 @@ srs_error_t SrsGoApiRtcNACK::serve_http(ISrsHttpResponseWriter* w, ISrsHttpMessa
 {
     srs_error_t err = srs_success;
 
-    SrsJsonObject* res = SrsJsonAny::object();
-    SrsAutoFree(SrsJsonObject, res);
+    SrsUniquePtr<SrsJsonObject> res(SrsJsonAny::object());
 
     res->set("code", SrsJsonAny::integer(ERROR_SUCCESS));
 
-    if ((err = do_serve_http(w, r, res)) != srs_success) {
+    if ((err = do_serve_http(w, r, res.get())) != srs_success) {
         srs_warn("RTC: NACK err %s", srs_error_desc(err).c_str());
         res->set("code", SrsJsonAny::integer(srs_error_code(err)));
         srs_freep(err);

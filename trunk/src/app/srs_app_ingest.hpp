@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -55,7 +55,7 @@ private:
     std::vector<SrsIngesterFFMPEG*> ingesters;
 private:
     SrsCoroutine* trd;
-    SrsPithyPrint* pprint;
+    SrsPithyPrint* pprint_;
     // Whether the ingesters are expired, for example, the listen port changed,
     // all ingesters must be restart.
     bool expired;

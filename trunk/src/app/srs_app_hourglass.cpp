@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -166,7 +166,7 @@ void SrsFastTimer::unsubscribe(ISrsFastTimer* timer)
 {
     vector<ISrsFastTimer*>::iterator it = std::find(handlers_.begin(), handlers_.end(), timer);
     if (it != handlers_.end()) {
-        it = handlers_.erase(it);
+        handlers_.erase(it);
     }
 }
 

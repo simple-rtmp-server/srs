@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -13,6 +13,19 @@
 #include <srs_utest.hpp>
 
 #include <string>
+
+class MyNormalObject
+{
+private:
+    int id_;
+public:
+    MyNormalObject(int id) {
+        id_ = id;
+    }
+    int id() {
+        return id_;
+    }
+};
 
 #endif
 

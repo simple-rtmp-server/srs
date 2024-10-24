@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2023 The SRS Authors
+// Copyright (c) 2013-2024 The SRS Authors
 //
 // SPDX-License-Identifier: MIT
 //
@@ -211,6 +211,34 @@ class SrsGoApiTcmalloc : public ISrsHttpHandler
 public:
     SrsGoApiTcmalloc();
     virtual ~SrsGoApiTcmalloc();
+public:
+    virtual srs_error_t serve_http(ISrsHttpResponseWriter* w, ISrsHttpMessage* r);
+};
+#endif
+
+#ifdef SRS_VALGRIND
+class SrsGoApiValgrind : public ISrsHttpHandler, public ISrsCoroutineHandler
+{
+private:
+    SrsCoroutine* trd_;
+    std::string task_;
+public:
+    SrsGoApiValgrind();
+    virtual ~SrsGoApiValgrind();
+public:
+    virtual srs_error_t serve_http(ISrsHttpResponseWriter* w, ISrsHttpMessage* r);
+// Interface ISrsCoroutineHandler
+public:
+    virtual srs_error_t cycle();
+};
+#endif
+
+#ifdef SRS_SIGNAL_API
+class SrsGoApiSignal : public ISrsHttpHandler
+{
+public:
+    SrsGoApiSignal();
+    virtual ~SrsGoApiSignal();
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter* w, ISrsHttpMessage* r);
 };
