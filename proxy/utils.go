@@ -32,7 +32,7 @@ func apiResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, da
 
 	b, err := json.Marshal(data)
 	if err != nil {
-		apiError(ctx, w, r, errors.Wrapf(err, "marshal %v %v", reflect.TypeOf(data), data))
+		apiError(ctx, w, r, errors.Wrapf(err, "marshal %v %v", reflect.TypeOf(data), data), http.StatusInternalServerError)
 		return
 	}
 
@@ -41,10 +41,10 @@ func apiResponse(ctx context.Context, w http.ResponseWriter, r *http.Request, da
 	w.Write(b)
 }
 
-func apiError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error) {
+func apiError(ctx context.Context, w http.ResponseWriter, r *http.Request, err error, code int) {
 	logger.Wf(ctx, "HTTP API error %+v", err)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusInternalServerError)
+	w.WriteHeader(code)
 	fmt.Fprintln(w, fmt.Sprintf("%v", err))
 }
 
@@ -67,6 +67,10 @@ func apiCORS(ctx context.Context, w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	return false
+}
+
+func isHttpStatusOK(v int) bool {
+	return v >= 200 && v < 300
 }
 
 func parseGracefullyQuitTimeout() (time.Duration, error) {
@@ -250,8 +254,9 @@ func parseSRTStreamID(sid string) (host, resource string, err error) {
 }
 
 // parseListenEndpoint parse the listen endpoint as:
-//		port The tcp listen port, like 1935.
-//		protocol://ip:port The listen endpoint, like tcp://:1935 or tcp://0.0.0.0:1935
+//
+//	port The tcp listen port, like 1935.
+//	protocol://ip:port The listen endpoint, like tcp://:1935 or tcp://0.0.0.0:1935
 func parseListenEndpoint(ep string) (protocol string, ip net.IP, port uint16, err error) {
 	// If no colon in ep, it's port in string.
 	if !strings.Contains(ep, ":") {

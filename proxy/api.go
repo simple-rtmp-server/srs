@@ -82,7 +82,7 @@ func (v *srsHTTPAPIServer) Run(ctx context.Context) error {
 	logger.Df(ctx, "Handle /rtc/v1/whip/ by %v", addr)
 	mux.HandleFunc("/rtc/v1/whip/", func(w http.ResponseWriter, r *http.Request) {
 		if err := v.rtc.HandleApiForWHIP(ctx, w, r); err != nil {
-			apiError(ctx, w, r, err)
+			apiError(ctx, w, r, err, http.StatusInternalServerError)
 		}
 	})
 
@@ -90,8 +90,13 @@ func (v *srsHTTPAPIServer) Run(ctx context.Context) error {
 	logger.Df(ctx, "Handle /rtc/v1/whep/ by %v", addr)
 	mux.HandleFunc("/rtc/v1/whep/", func(w http.ResponseWriter, r *http.Request) {
 		if err := v.rtc.HandleApiForWHEP(ctx, w, r); err != nil {
-			apiError(ctx, w, r, err)
+			apiError(ctx, w, r, err, http.StatusInternalServerError)
 		}
+	})
+
+	logger.Df(ctx, "Proxy /api/ to srs")
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		srsLoadBalancer.ProxyHTTPAPI(ctx, w, r)
 	})
 
 	// Run HTTP API server.
@@ -239,7 +244,7 @@ func (v *systemAPI) Run(ctx context.Context) error {
 			logger.Df(ctx, "Register SRS media server, %+v", server)
 			return nil
 		}(); err != nil {
-			apiError(ctx, w, r, err)
+			apiError(ctx, w, r, err, http.StatusInternalServerError)
 		}
 
 		type Response struct {
