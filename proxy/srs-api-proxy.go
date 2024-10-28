@@ -104,6 +104,41 @@ type SrsStreamsResponse struct {
 	Streams []SrsStream `json:"streams"`
 }
 
+type SrsHTTPApi struct {
+	Enabled     bool      `json:"enabled"`
+	Listen      string    `json:"listen"`
+	Crossdomain bool      `json:"crossdomain"`
+	Raw_api     SrsRawApi `json:"raw_api"`
+}
+
+type SrsRawApi struct {
+	Enabled      bool `json:"enabled"`
+	Allow_reload bool `json:"allow_reload"`
+	Allow_query  bool `json:"allow_query"`
+	Allow_update bool `json:"allow_update"`
+}
+
+type SrsRawResponse struct {
+	SrsApiCodeResponse
+	Http_api SrsHTTPApi `json:"http_api"`
+}
+
+type SrsRawReloadResponse struct {
+	SrsApiCodeResponse
+}
+
+type SrsRawReloadFetchData struct {
+	Err   int    `json:"err"`
+	Msg   string `json:"msg"`
+	State int    `json:"state"`
+	Rid   string `json:"rid"`
+}
+
+type SrsRawReloadFetchResponse struct {
+	SrsApiCodeResponse
+	Data SrsRawReloadFetchData `json:"data"`
+}
+
 type SrsApiProxy struct {
 }
 
@@ -112,6 +147,8 @@ func (v *SrsApiProxy) proxySrsAPI(ctx context.Context, servers []*SRSServer, w h
 		return proxySrsClientsAPI(ctx, servers, w, r)
 	} else if strings.HasPrefix(r.URL.Path, "/api/v1/streams") {
 		return proxySrsStreamsAPI(ctx, servers, w, r)
+	} else if strings.HasPrefix(r.URL.Path, "/api/v1/raw") {
+		return proxySrsRawAPI(ctx, servers, w, r)
 	}
 	return nil
 }
@@ -226,6 +263,45 @@ func proxySrsStreamsAPI(ctx context.Context, servers []*SRSServer, w http.Respon
 
 		apiResponse(ctx, w, r, streams)
 		return nil
+	}
+}
+
+func proxySrsRawAPI(ctx context.Context, servers []*SRSServer, w http.ResponseWriter, r *http.Request) error {
+	defer r.Body.Close()
+
+	rpc := r.URL.Query().Get("rpc")
+	logger.Df(ctx, "%v, rpc=%v", r.URL.Path, rpc)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		apiError(ctx, w, r, err, http.StatusInternalServerError)
+		return errors.Wrapf(err, "read request body err")
+	}
+
+	for _, server := range servers {
+		if ret, err := server.ApiRequest(ctx, r, body); err == nil {
+			if rpc == "raw" {
+				// return the first success response
+				var raw SrsRawResponse
+				if err := json.Unmarshal(ret, &raw); err == nil && raw.Code == 0 {
+					raw.Http_api.Listen = envHttpAPI()
+					apiResponse(ctx, w, r, raw)
+					return nil
+				}
+			} else if rpc == "reload" {
+				var res SrsRawReloadResponse
+				err := json.Unmarshal(ret, &res)
+				logger.Df(ctx, "%v %v %v %v", server.IP, r.URL.Path, res, err)
+			} else if rpc == "reload-fetch" {
+				var res SrsRawReloadFetchResponse
+				err := json.Unmarshal(ret, &res)
+				logger.Df(ctx, "%v %v %v %v", server.IP, r.URL.Path, res, err)
+			} else {
+				var code SrsApiCodeResponse
+				if err := json.Unmarshal(ret, &code); err == nil {
+					logger.Df(ctx, "%v %v", r.URL.Path, code)
+				}
+			}
+		}
 	}
 
 	return nil
