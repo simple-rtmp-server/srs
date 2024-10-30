@@ -82,8 +82,8 @@ public:
 public:
     bool has_audio;
     SrsAudioCodecId acodec;
-    SrsAudioSampleRate asample_rate;
-    SrsAudioChannels asound_type;
+    int asample_rate;
+    int asound_type;
     // The audio specified
     // audioObjectType, in 1.6.2.1 AudioSpecificConfig, page 33,
     // 1.5.1.1 Audio object type definition, page 23,
@@ -169,8 +169,8 @@ public:
     // When got video info for stream.
     virtual srs_error_t on_video_info(SrsRequest* req, SrsVideoCodecId vcodec, int avc_profile, int avc_level, int width, int height);
     // When got audio info for stream.
-    virtual srs_error_t on_audio_info(SrsRequest* req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate,
-        SrsAudioChannels asound_type, SrsAacObjectType aac_object);
+    virtual srs_error_t on_audio_info(SrsRequest* req, SrsAudioCodecId acodec, int asample_rate,
+        int asound_type, SrsAacObjectType aac_object);
     // When got videos, update the frames.
     // We only stat the total number of video frames.
     virtual srs_error_t on_video_frames(SrsRequest* req, int nb_frames);
