@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2024-10-31, Merge [#4218](https://github.com/ossrs/srs/pull/4218): fix Unit test: StUtimeInMicroseconds. v7.0.20 (#4218)
 * v7.0, 2024-10-31, Merge [#4216](https://github.com/ossrs/srs/pull/4216): fix hls error when stream has extension. v7.0.19 (#4216)
 * v7.0, 2024-10-15, Merge [#4160](https://github.com/ossrs/srs/pull/4160): RTC2RTMP: Fix screen sharing stutter caused by packet loss. v7.0.18 (#4160)
 * v7.0, 2024-10-15, Merge [#3979](https://github.com/ossrs/srs/pull/3979): ST: Use clock_gettime to prevent time jumping backwards. v7.0.17 (#3979)
