@@ -101,7 +101,14 @@ func (v *SRSServer) Format(f fmt.State, c rune) {
 }
 
 func (v *SRSServer) ApiRequest(ctx context.Context, r *http.Request, body []byte) ([]byte, error) {
-	url := "http://" + v.IP + ":" + v.API[0] + r.URL.Path
+	var url string
+	// if the v.API[0] contains ip address, e.g. 127.0.0.1:1985, then use it as the ip address
+	if strings.Contains(v.API[0], ":") && strings.Index(v.API[0], ":") > 0 {
+		url = "http://" + v.API[0] + r.URL.Path
+	} else {
+		url = "http://" + v.IP + ":" + v.API[0] + r.URL.Path
+	}
+
 	if r.URL.RawQuery != "" {
 		url += "?" + r.URL.RawQuery
 	}
