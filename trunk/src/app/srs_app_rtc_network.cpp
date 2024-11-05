@@ -713,10 +713,12 @@ SrsRtcTcpConn::SrsRtcTcpConn(ISrsProtocolReadWriter* skt, std::string cip, int p
     delta_->set_io(skt_, skt_);
     session_ = NULL;
     pkt_ = new char[SRS_RTC_TCP_PACKET_MAX];
+    _srs_rtc_manager->subscribe(this);
 }
 
 SrsRtcTcpConn::~SrsRtcTcpConn()
 {
+    _srs_rtc_manager->unsubscribe(this);
     srs_freepa(pkt_);
     srs_freep(delta_);
     srs_freep(skt_);
@@ -806,6 +808,23 @@ srs_error_t SrsRtcTcpConn::cycle()
 
     srs_freep(err);
     return srs_success;
+}
+
+void SrsRtcTcpConn::on_before_dispose(ISrsResource* c)
+{
+    SrsRtcConnection* session = dynamic_cast<SrsRtcConnection*>(c);
+    if (session && session == session_) {
+        if (session_->tcp()->is_establelished()) {
+            session_->tcp()->set_state(SrsRtcNetworkStateClosed);
+            session_->expire();
+        }
+
+        session_ = NULL;
+    }
+}
+
+void SrsRtcTcpConn::on_disposing(ISrsResource* c)
+{
 }
 
 srs_error_t SrsRtcTcpConn::do_cycle()
