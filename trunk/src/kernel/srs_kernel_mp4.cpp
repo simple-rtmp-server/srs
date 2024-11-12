@@ -4820,6 +4820,10 @@ uint32_t SrsMp4Sample::pts_ms()
 
 SrsMp4SampleManager::SrsMp4SampleManager()
 {
+    video_start_dts_ = 0;
+    audio_start_dts_ = 0;
+    has_first_video_ = false;
+    has_first_audio_ = false;
 }
 
 SrsMp4SampleManager::~SrsMp4SampleManager()
@@ -4900,6 +4904,16 @@ SrsMp4Sample* SrsMp4SampleManager::at(uint32_t index)
 
 void SrsMp4SampleManager::append(SrsMp4Sample* sample)
 {
+    if (!has_first_audio_ && sample->type == SrsFrameTypeAudio) {
+        has_first_audio_ = true;
+        audio_start_dts_ = sample->dts;
+    }
+
+    if (!has_first_video_ && sample->type == SrsFrameTypeVideo) {
+        has_first_video_ = true;
+        video_start_dts_ = sample->dts;
+    }
+    
     samples.push_back(sample);
 }
 
@@ -4920,7 +4934,7 @@ srs_error_t SrsMp4SampleManager::write(SrsMp4MovieBox* moov)
         }
         
         SrsMp4SampleTableBox* stbl = vide->stbl();
-        
+
         SrsMp4DecodingTime2SampleBox* stts = new SrsMp4DecodingTime2SampleBox();
         stbl->set_stts(stts);
         
@@ -4950,7 +4964,7 @@ srs_error_t SrsMp4SampleManager::write(SrsMp4MovieBox* moov)
             co = new SrsMp4ChunkLargeOffsetBox();
             stbl->set_co64(static_cast<SrsMp4ChunkLargeOffsetBox*>(co));
         }
-        
+
         if ((err = write_track(SrsFrameTypeVideo, stts, stss, ctts, stsc, stsz, co)) != srs_success) {
             return srs_error_wrap(err, "write vide track");
         }
@@ -5077,6 +5091,11 @@ srs_error_t SrsMp4SampleManager::write_track(SrsFrameType track,
             } else {
                 // The first sample always in the STTS table.
                 stts_entry.sample_count++;
+                if (track == SrsFrameTypeVideo) {
+                    stts_entry.sample_delta = video_start_dts_ > audio_start_dts_ ? video_start_dts_ - audio_start_dts_ : 0;
+                } else if (track == SrsFrameTypeAudio) {
+                    stts_entry.sample_delta = audio_start_dts_ > video_start_dts_ ? audio_start_dts_ - video_start_dts_ : 0;
+                }
             }
         }
         

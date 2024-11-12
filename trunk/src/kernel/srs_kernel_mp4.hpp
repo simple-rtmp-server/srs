@@ -1914,6 +1914,11 @@ public:
 //      The keyframe is specified by stss.
 class SrsMp4SampleManager
 {
+private:
+    uint64_t video_start_dts_;
+    uint64_t audio_start_dts_;
+    bool has_first_video_;
+    bool has_first_audio_;
 public:
     std::vector<SrsMp4Sample*> samples;
 public:
