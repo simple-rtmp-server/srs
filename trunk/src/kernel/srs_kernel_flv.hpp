@@ -151,7 +151,7 @@ public:
     // The 4 bytes are packed in the big-endian order.
     // @remark, used as calc timestamp when decode and encode time.
     // @remark, we use 64bits for large time for jitter detect and hls.
-    int64_t timestamp;
+    uint64_t timestamp;
 public:
     // Get the prefered cid(chunk stream id) which sendout over.
     // set at decoding, and canbe used for directly send message,
@@ -177,9 +177,9 @@ public:
     // Create a amf0 script header, set the size and stream_id.
     void initialize_amf0_script(int size, int stream);
     // Create a audio header, set the size, timestamp and stream_id.
-    void initialize_audio(int size, uint32_t time, int stream);
+    void initialize_audio(int size, uint64_t time, int stream);
     // Create a video header, set the size, timestamp and stream_id.
-    void initialize_video(int size, uint32_t time, int stream);
+    void initialize_video(int size, uint64_t time, int stream);
 };
 
 // The message is raw data RTMP message, bytes oriented,

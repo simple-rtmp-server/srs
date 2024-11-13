@@ -1259,7 +1259,7 @@ class SrsFrame
 {
 public:
     // The DTS/PTS in milliseconds, which is TBN=1000.
-    int64_t dts;
+    uint64_t dts;
     // PTS = DTS + CTS.
     int32_t cts;
 public:

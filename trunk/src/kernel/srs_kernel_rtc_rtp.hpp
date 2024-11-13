@@ -299,7 +299,7 @@ private:
     // The helper handler for decoder, use RAW payload if NULL.
     ISrsRtspPacketDecodeHandler* decode_handler;
 private:
-    int64_t avsync_time_;
+    uint64_t avsync_time_;
 public:
     SrsRtpPacket();
     virtual ~SrsRtpPacket();
@@ -336,8 +336,8 @@ public:
 public:
     bool is_keyframe();
     // Get and set the packet sync time in milliseconds.
-    void set_avsync_time(int64_t avsync_time) { avsync_time_ = avsync_time; }
-    int64_t get_avsync_time() const { return avsync_time_; }
+    void set_avsync_time(uint64_t avsync_time) { avsync_time_ = avsync_time; }
+    uint64_t get_avsync_time() const { return avsync_time_; }
 };
 
 // Single payload data.

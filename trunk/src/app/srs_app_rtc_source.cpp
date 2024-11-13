@@ -1489,7 +1489,7 @@ srs_error_t SrsRtcFrameBuilder::transcode_audio(SrsRtpPacket *pkt)
     srs_error_t err = srs_success;
 
     // to common message.
-    uint32_t ts = pkt->get_avsync_time();
+    uint64_t ts = pkt->get_avsync_time();
     if (is_first_audio_) {
         int header_len = 0;
         uint8_t* header = NULL;
@@ -1543,7 +1543,7 @@ srs_error_t SrsRtcFrameBuilder::transcode_audio(SrsRtpPacket *pkt)
     return err;
 }
 
-void SrsRtcFrameBuilder::packet_aac(SrsCommonMessage* audio, char* data, int len, uint32_t pts, bool is_header)
+void SrsRtcFrameBuilder::packet_aac(SrsCommonMessage* audio, char* data, int len, uint64_t pts, bool is_header)
 {
     int rtmp_len = len + 2;
     audio->header.initialize_audio(rtmp_len, pts, 1);

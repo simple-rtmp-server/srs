@@ -109,31 +109,31 @@ void SrsMessageHeader::initialize_amf0_script(int size, int stream)
     message_type = RTMP_MSG_AMF0DataMessage;
     payload_length = (int32_t)size;
     timestamp_delta = (int32_t)0;
-    timestamp = (int64_t)0;
+    timestamp = 0;
     stream_id = (int32_t)stream;
     
     // amf0 script use connection2 chunk-id
     prefer_cid = RTMP_CID_OverConnection2;
 }
 
-void SrsMessageHeader::initialize_audio(int size, uint32_t time, int stream)
+void SrsMessageHeader::initialize_audio(int size, uint64_t time, int stream)
 {
     message_type = RTMP_MSG_AudioMessage;
     payload_length = (int32_t)size;
     timestamp_delta = (int32_t)time;
-    timestamp = (int64_t)time;
+    timestamp = time;
     stream_id = (int32_t)stream;
     
     // audio chunk-id
     prefer_cid = RTMP_CID_Audio;
 }
 
-void SrsMessageHeader::initialize_video(int size, uint32_t time, int stream)
+void SrsMessageHeader::initialize_video(int size, uint64_t time, int stream)
 {
     message_type = RTMP_MSG_VideoMessage;
     payload_length = (int32_t)size;
     timestamp_delta = (int32_t)time;
-    timestamp = (int64_t)time;
+    timestamp = time;
     stream_id = (int32_t)stream;
     
     // video chunk-id

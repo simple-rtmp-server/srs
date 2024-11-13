@@ -352,7 +352,7 @@ public:
     virtual srs_error_t on_rtp(SrsRtpPacket *pkt);
 private:
     srs_error_t transcode_audio(SrsRtpPacket *pkt);
-    void packet_aac(SrsCommonMessage* audio, char* data, int len, uint32_t pts, bool is_header);
+    void packet_aac(SrsCommonMessage* audio, char* data, int len, uint64_t pts, bool is_header);
 private:
     srs_error_t packet_video(SrsRtpPacket* pkt);
     srs_error_t packet_video_key_frame(SrsRtpPacket* pkt);
