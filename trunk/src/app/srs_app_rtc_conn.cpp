@@ -3274,17 +3274,17 @@ srs_error_t SrsRtcConnection::generate_play_local_sdp(SrsRequest* req, SrsSdp& l
     std::string cname = srs_random_str(16);
 
     if (audio_before_video) {
-        if ((err = generate_play_local_sdp_for_audio(local_sdp, stream_desc, cname)) != srs_success) {
+        if ((err = generate_play_local_sdp_for_audio(local_sdp, stream_desc, cname, stream_id)) != srs_success) {
             return srs_error_wrap(err, "audio");
         }
-        if ((err = generate_play_local_sdp_for_video(local_sdp, stream_desc, unified_plan, cname)) != srs_success) {
+        if ((err = generate_play_local_sdp_for_video(local_sdp, stream_desc, unified_plan, cname, stream_id)) != srs_success) {
             return srs_error_wrap(err, "video");
         }
     } else {
-        if ((err = generate_play_local_sdp_for_video(local_sdp, stream_desc, unified_plan, cname)) != srs_success) {
+        if ((err = generate_play_local_sdp_for_video(local_sdp, stream_desc, unified_plan, cname, stream_id)) != srs_success) {
             return srs_error_wrap(err, "video");
         }
-        if ((err = generate_play_local_sdp_for_audio(local_sdp, stream_desc, cname)) != srs_success) {
+        if ((err = generate_play_local_sdp_for_audio(local_sdp, stream_desc, cname, stream_id)) != srs_success) {
             return srs_error_wrap(err, "audio");
         }
     }
@@ -3292,13 +3292,14 @@ srs_error_t SrsRtcConnection::generate_play_local_sdp(SrsRequest* req, SrsSdp& l
     return err;
 }
 
-srs_error_t SrsRtcConnection::generate_play_local_sdp_for_audio(SrsSdp& local_sdp, SrsRtcSourceDescription* stream_desc, std::string cname)
+srs_error_t SrsRtcConnection::generate_play_local_sdp_for_audio(SrsSdp& local_sdp, SrsRtcSourceDescription* stream_desc, std::string cname, std::string stream_id)
 {
     srs_error_t err = srs_success;
 
     // generate audio media desc
     if (stream_desc->audio_track_desc_) {
         SrsRtcTrackDescription* audio_track = stream_desc->audio_track_desc_;
+        audio_track->msid_ = stream_id;
 
         local_sdp.media_descs_.push_back(SrsMediaDesc("audio"));
         SrsMediaDesc& local_media_desc = local_sdp.media_descs_.back();
@@ -3358,12 +3359,13 @@ srs_error_t SrsRtcConnection::generate_play_local_sdp_for_audio(SrsSdp& local_sd
     return err;
 }
 
-srs_error_t SrsRtcConnection::generate_play_local_sdp_for_video(SrsSdp& local_sdp, SrsRtcSourceDescription* stream_desc, bool unified_plan, std::string cname)
+srs_error_t SrsRtcConnection::generate_play_local_sdp_for_video(SrsSdp& local_sdp, SrsRtcSourceDescription* stream_desc, bool unified_plan, std::string cname, std::string stream_id)
 {
     srs_error_t err = srs_success;
 
     for (int i = 0;  i < (int)stream_desc->video_track_descs_.size(); ++i) {
         SrsRtcTrackDescription* track = stream_desc->video_track_descs_[i];
+        track->msid_ = stream_id;
 
         if (!unified_plan) {
             // for plan b, we only add one m= for video track.
