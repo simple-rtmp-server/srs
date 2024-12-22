@@ -2512,8 +2512,6 @@ srs_error_t SrsConfig::check_normal_config()
     // Check HTTP API and server.
     ////////////////////////////////////////////////////////////////////////
     if (true) {
-        string api = get_http_api_listen();
-        string server = get_http_stream_listen();
         vector<string> api_vec = get_http_apis_listens();
         vector<string> server_vec = get_http_streams_listens();
         if (api_vec.empty()) {
@@ -2526,50 +2524,42 @@ srs_error_t SrsConfig::check_normal_config()
         std::sort(api_vec.begin(), api_vec.end());
         std::sort(server_vec.begin(), server_vec.end());
 
-        // 교집합 결과를 저장할 벡터
         std::vector<string> intersection_result;
         std::vector<string> intersections_result;
-
-        // set_intersection 사용
         std::set_intersection(
             api_vec.begin(), api_vec.end(),
             server_vec.begin(), server_vec.end(),
             std::back_inserter(intersection_result)
         );
 
-        if (intersection_result.size() != 0 && intersection_result != api_vec.size())
+        bool isNotSameHttp = intersection_result.size() == 0;
+        bool isFullyContainedHttp = intersection_result.size() != 0 && intersection_result.size() == api_vec.size();
+        if (!isNotSameHttp && !isFullyContainedHttp)
         {
-            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http api and server have a intersection, but http server did not include http api");
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http api and server have a intersection, but http server doesn't fully contain http api");
         }
-
-
-        string apis = get_https_api_listen();
-        string servers = get_https_stream_listen();
         vector<string> apis_vec = get_https_apis_listens();
         vector<string> servers_vec = get_https_streams_listens();
 
         std::sort(apis_vec.begin(), apis_vec.end());
         std::sort(servers_vec.begin(), servers_vec.end());
-
-        // 교집합 결과를 저장할 벡터
-
-        // set_intersection 사용
         std::set_intersection(
             apis_vec.begin(), apis_vec.end(),
             servers_vec.begin(), servers_vec.end(),
             std::back_inserter(intersections_result)
         );
 
-       if (intersections_result.size() != 0 && intersections_result != api_vec.size())
+        bool isNotSameHttps = intersections_result.size() == 0;
+        bool isFullyContainedHttps = intersections_result.size() != 0 && intersections_result.size() == apis_vec.size();
+        if (!isNotSameHttps && !isFullyContainedHttps)
         {
-            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "https api and server have a intersection, but https server did not include http api");
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "https api and server have a intersection, but https server doesn't fully contain https api");
         }
-        
-        if (api == server && apis != servers) {
-            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same http, https api(%s) != server(%s)", apis.c_str(), servers.c_str());
+        if (!isNotSameHttp && isNotSameHttps) {
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same http, https api != server");
         }
-        if (apis == servers && api != server) {
-            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same https, http api(%s) != server(%s)", api.c_str(), server.c_str());
+        if (!isNotSameHttps && isNotSameHttp) {
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same https, http api != server");
         }
 
         if (get_https_api_enabled() && !get_http_api_enabled()) {
@@ -7750,7 +7740,7 @@ std::vector<std::string> SrsConfig::get_http_apis_listens()
         ports.push_back(DEFAULT);
         return ports;
     }
-    
+    conf = conf->get("listen");
     for (int i = 0; i < (int)conf->args.size(); i++) {
         ports.push_back(conf->args.at(i));
     }
@@ -7978,7 +7968,7 @@ std::vector<std::string> SrsConfig::get_https_apis_listens()
         ports.push_back(DEFAULT);
         return ports;
     }
-    
+    conf = conf->get("listen");
     for (int i = 0; i < (int)conf->args.size(); i++) {
         ports.push_back(conf->args.at(i));
     }
@@ -8414,7 +8404,7 @@ std::vector<std::string> SrsConfig::get_http_streams_listens()
         ports.push_back(DEFAULT);
         return ports;
     }
-    
+    conf = conf->get("listen");
     for (int i = 0; i < (int)conf->args.size(); i++) {
         ports.push_back(conf->args.at(i));
     }
@@ -8539,7 +8529,7 @@ std::vector<std::string> SrsConfig::get_https_streams_listens()
         ports.push_back(DEFAULT);
         return ports;
     }
-    
+    conf = conf->get("listen");
     for (int i = 0; i < (int)conf->args.size(); i++) {
         ports.push_back(conf->args.at(i));
     }

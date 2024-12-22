@@ -336,10 +336,10 @@ SrsServer::SrsServer()
     ppid = ::getppid();
 
     rtmp_listener_ = new SrsMultipleTcpListeners(this);
-    api_listener_ = new SrsTcpListener(this);
-    apis_listener_ = new SrsTcpListener(this);
-    http_listener_ = new SrsTcpListener(this);
-    https_listener_ = new SrsTcpListener(this);
+    api_listener_ = new SrsMultipleTcpListeners(this);
+    apis_listener_ = new SrsMultipleTcpListeners(this);
+    http_listener_ = new SrsMultipleTcpListeners(this);
+    https_listener_ = new SrsMultipleTcpListeners(this);
     webrtc_listener_ = new SrsTcpListener(this);
     stream_caster_flv_listener_ = new SrsHttpFlvListener();
     stream_caster_mpegts_ = new SrsUdpCasterListener();
@@ -491,10 +491,8 @@ srs_error_t SrsServer::initialize()
     _srs_config->subscribe(this);
 
     bool stream = _srs_config->get_http_stream_enabled();
-    string http_listen = _srs_config->get_http_stream_listen();
-    string https_listen = _srs_config->get_https_stream_listen();
-    vector<string> server_vec = get_http_streams_listens();
-    vector<string> servers_vec = get_https_streams_listens();
+    vector<string> server_vec = _srs_config->get_http_streams_listens();
+    vector<string> servers_vec = _srs_config->get_https_streams_listens();
     std::sort(server_vec.begin(), server_vec.end());
     std::sort(servers_vec.begin(), servers_vec.end());
 
@@ -506,22 +504,26 @@ srs_error_t SrsServer::initialize()
     bool rtc_tcp = _srs_config->get_rtc_server_tcp_enabled();
     string rtc_listen = srs_int2str(_srs_config->get_rtc_server_tcp_listen());
     // If enabled and listen is the same value, resue port for WebRTC over TCP.
-    if (stream && rtc && rtc_tcp && http_listen == rtc_listen) {
-        srs_trace("WebRTC tcp=%s reuses http=%s server", rtc_listen.c_str(), http_listen.c_str());
-        reuse_rtc_over_server_ = true;
+    for (string http_listen : server_vec)
+    {
+        if (stream && rtc && rtc_tcp && http_listen == rtc_listen) {
+            srs_trace("WebRTC tcp=%s reuses http=%s server", rtc_listen.c_str(), http_listen.c_str());
+            reuse_rtc_over_server_ = true;
+        }
     }
-    if (stream && rtc && rtc_tcp && https_listen == rtc_listen) {
-        srs_trace("WebRTC tcp=%s reuses https=%s server", rtc_listen.c_str(), https_listen.c_str());
-        reuse_rtc_over_server_ = true;
+    for (string https_listen : servers_vec)
+    {
+        if (stream && rtc && rtc_tcp && https_listen == rtc_listen) {
+            srs_trace("WebRTC tcp=%s reuses https=%s server", rtc_listen.c_str(), https_listen.c_str());
+            reuse_rtc_over_server_ = true;
+        }
     }
 #endif
 
     // If enabled and the listen is the same value, reuse port.
     bool api = _srs_config->get_http_api_enabled();
-    string api_listen = _srs_config->get_http_api_listen();
-    string apis_listen = _srs_config->get_https_api_listen();
-    vector<string> api_vec = get_http_apis_listens();
-    vector<string> apis_vec = get_https_apis_listens();
+    vector<string> api_vec = _srs_config->get_http_apis_listens();
+    vector<string> apis_vec = _srs_config->get_https_apis_listens();
 
     std::sort(api_vec.begin(), api_vec.end());
     std::sort(apis_vec.begin(), apis_vec.end());
@@ -534,25 +536,37 @@ srs_error_t SrsServer::initialize()
         server_vec.begin(), server_vec.end(),
         std::back_inserter(intersection_result)
     );
+    std::set_intersection(
+        apis_vec.begin(), apis_vec.end(),
+        servers_vec.begin(), servers_vec.end(),
+        std::back_inserter(intersections_result)
+    );
+    bool isNotSameHttp = intersection_result.size() == 0;
+    bool isFullyContainedHttp = intersection_result.size() != 0 && intersection_result.size() == api_vec.size();
+    bool isNotSameHttps = intersections_result.size() == 0;
+    bool isFullyContainedHttps = intersections_result.size() != 0 && intersections_result.size() == apis_vec.size();
 
-    if (intersection_result.size() == 0)
+    if ((!isNotSameHttp && !isFullyContainedHttp) || (!isNotSameHttps && !isFullyContainedHttps))
+    {
+        return srs_error_wrap(err, "http api and http server have a intersection. but http server doesn't fully contain http api");
+    }
+    
+    if (stream && api && isFullyContainedHttp && isFullyContainedHttps)
+    {
+        srs_trace("API reuses http and https server");
+        for (string http_listen : intersection_result)
+        {
+            srs_trace("API reuses http=%s server", http_listen.c_str());
+        }
+        for (string https_listen : intersections_result)
+        {
+            srs_trace("API reuses https=%s server", https_listen.c_str());
+        }
+        reuse_api_over_server_ = true;
+    }
+    else if (isNotSameHttp && isNotSameHttps)
     {
         reuse_api_over_server_ = false;
-    }
-    else if (intersection_result.size() == api_vec.size())
-    {
-        reuse_api_over_server_ = true;
-    }
-    else
-    {
-        return srs_error_wrap(err, "http api initialize");
-    }
-
-    
-
-    if (stream && api && api_listen == http_listen && apis_listen == https_listen) {
-        srs_trace("API reuses http=%s and https=%s server", http_listen.c_str(), https_listen.c_str());
-        reuse_api_over_server_ = true;
     }
 
     // Only init HTTP API when not reusing HTTP server.
@@ -622,8 +636,8 @@ srs_error_t SrsServer::listen()
         if (reuse_api_over_server_) {
             srs_trace("HTTP-API: Reuse listen to http server %s", _srs_config->get_http_stream_listen().c_str());
         } else {
-            api_listener_->set_endpoint(_srs_config->get_http_api_listen())->set_label("HTTP-API");
-            if ((err = api_listener_->listen()) != srs_success) {
+		    api_listener_->add(_srs_config->get_http_apis_listens())->set_label("HTTP_API");
+	        if ((err = api_listener_->listen()) != srs_success) {
                 return srs_error_wrap(err, "http api listen");
             }
         }
@@ -634,8 +648,8 @@ srs_error_t SrsServer::listen()
         if (reuse_api_over_server_) {
             srs_trace("HTTPS-API: Reuse listen to http server %s", _srs_config->get_https_stream_listen().c_str());
         } else {
-            apis_listener_->set_endpoint(_srs_config->get_https_api_listen())->set_label("HTTPS-API");
-            if ((err = apis_listener_->listen()) != srs_success) {
+            apis_listener_->add(_srs_config->get_https_apis_listens())->set_label("HTTPS_API");
+	        if ((err = apis_listener_->listen()) != srs_success) {
                 return srs_error_wrap(err, "https api listen");
             }
         }
@@ -643,7 +657,7 @@ srs_error_t SrsServer::listen()
 
     // Create HTTP server listener.
     if (_srs_config->get_http_stream_enabled()) {
-        http_listener_->set_endpoint(_srs_config->get_http_stream_listen())->set_label("HTTP-Server");
+        http_listener_->add(_srs_config->get_http_streams_listens())->set_label("HTTP-Server");
         if ((err = http_listener_->listen()) != srs_success) {
             return srs_error_wrap(err, "http server listen");
         }
@@ -651,7 +665,7 @@ srs_error_t SrsServer::listen()
 
     // Create HTTPS server listener.
     if (_srs_config->get_https_stream_enabled()) {
-        https_listener_->set_endpoint(_srs_config->get_https_stream_listen())->set_label("HTTPS-Server");
+        https_listener_->add(_srs_config->get_https_streams_listens())->set_label("HTTPS-Server");
         if ((err = https_listener_->listen()) != srs_success) {
             return srs_error_wrap(err, "https server listen");
         }
