@@ -116,7 +116,7 @@ private:
     bool reuse_api_over_server_;
     // If reusing, WebRTC TCP use the same port of HTTP server.
     bool reuse_rtc_over_server_;
-    // RTMP stream listeners, over TCP.
+    // RTMP stream listeners, over TCP. 
     SrsMultipleTcpListeners* rtmp_listener_;
     // HTTP API listener, over TCP. Please note that it might reuse with stream listener.
     SrsTcpListener* api_listener_;

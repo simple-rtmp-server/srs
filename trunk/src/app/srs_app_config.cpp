@@ -2514,15 +2514,57 @@ srs_error_t SrsConfig::check_normal_config()
     if (true) {
         string api = get_http_api_listen();
         string server = get_http_stream_listen();
-        if (api.empty()) {
+        vector<string> api_vec = get_http_apis_listens();
+        vector<string> server_vec = get_http_streams_listens();
+        if (api_vec.empty()) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.listen requires params");
         }
-        if (server.empty()) {
+        if (server_vec.empty()) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_server.listen requires params");
         }
 
+        std::sort(api_vec.begin(), api_vec.end());
+        std::sort(server_vec.begin(), server_vec.end());
+
+        // 교집합 결과를 저장할 벡터
+        std::vector<string> intersection_result;
+        std::vector<string> intersections_result;
+
+        // set_intersection 사용
+        std::set_intersection(
+            api_vec.begin(), api_vec.end(),
+            server_vec.begin(), server_vec.end(),
+            std::back_inserter(intersection_result)
+        );
+
+        if (intersection_result.size() != 0 && intersection_result != api_vec.size())
+        {
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http api and server have a intersection, but http server did not include http api");
+        }
+
+
         string apis = get_https_api_listen();
         string servers = get_https_stream_listen();
+        vector<string> apis_vec = get_https_apis_listens();
+        vector<string> servers_vec = get_https_streams_listens();
+
+        std::sort(apis_vec.begin(), apis_vec.end());
+        std::sort(servers_vec.begin(), servers_vec.end());
+
+        // 교집합 결과를 저장할 벡터
+
+        // set_intersection 사용
+        std::set_intersection(
+            apis_vec.begin(), apis_vec.end(),
+            servers_vec.begin(), servers_vec.end(),
+            std::back_inserter(intersections_result)
+        );
+
+       if (intersections_result.size() != 0 && intersections_result != api_vec.size())
+        {
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "https api and server have a intersection, but https server did not include http api");
+        }
+        
         if (api == server && apis != servers) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same http, https api(%s) != server(%s)", apis.c_str(), servers.c_str());
         }
@@ -7696,6 +7738,26 @@ string SrsConfig::get_http_api_listen()
     return conf->arg0();
 }
 
+std::vector<std::string> SrsConfig::get_http_apis_listens()
+{
+    std::vector<string> ports;
+    if (!srs_getenv("srs.http_api.listen").empty()) { // SRS_LISTEN
+        return srs_string_split(srs_getenv("srs.http_api.listen"), " ");
+    }
+    string DEFAULT = "1985";
+    SrsConfDirective* conf = root->get("http_api");
+    if (!conf) {
+        ports.push_back(DEFAULT);
+        return ports;
+    }
+    
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        ports.push_back(conf->args.at(i));
+    }
+    
+    return ports;
+}
+
 bool SrsConfig::get_http_api_crossdomain()
 {
     SRS_OVERWRITE_BY_ENV_BOOL2("srs.http_api.crossdomain"); // SRS_HTTP_API_CROSSDOMAIN
@@ -7899,6 +7961,31 @@ string SrsConfig::get_https_api_listen()
 
     return conf->arg0();
 }
+
+std::vector<std::string> SrsConfig::get_https_apis_listens()
+{
+    std::vector<string> ports;
+    if (!srs_getenv("srs.http_api.https.listen").empty()) { // SRS_LISTEN
+        return srs_string_split(srs_getenv("srs.http_api.https.listen"), " ");
+    }
+    static string DEFAULT = "1990";
+        if (get_http_api_listen() == get_http_stream_listen()) {
+        DEFAULT = get_https_stream_listen();
+    }
+
+    SrsConfDirective* conf = get_https_api();
+    if (!conf) {
+        ports.push_back(DEFAULT);
+        return ports;
+    }
+    
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        ports.push_back(conf->args.at(i));
+    }
+    
+    return ports;
+}
+
 
 string SrsConfig::get_https_api_ssl_key()
 {
@@ -8315,6 +8402,25 @@ bool SrsConfig::get_http_stream_enabled(SrsConfDirective* conf)
     
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
+std::vector<std::string> SrsConfig::get_http_streams_listens()
+{
+    std::vector<string> ports;
+    if (!srs_getenv("srs.http_server.listen").empty()) { // SRS_LISTEN
+        return srs_string_split(srs_getenv("srs.http_server.listen"), " ");
+    }
+    string DEFAULT = "8080";
+    SrsConfDirective* conf = root->get("http_server");
+    if (!conf) {
+        ports.push_back(DEFAULT);
+        return ports;
+    }
+    
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        ports.push_back(conf->args.at(i));
+    }
+    
+    return ports;
+}
 
 string SrsConfig::get_http_stream_listen()
 {
@@ -8419,6 +8525,26 @@ string SrsConfig::get_https_stream_listen()
     }
 
     return conf->arg0();
+}
+
+std::vector<std::string> SrsConfig::get_https_streams_listens()
+{
+    std::vector<string> ports;
+    if (!srs_getenv("srs.http_server.https.listen").empty()) { // SRS_LISTEN
+        return srs_string_split(srs_getenv("srs.http_server.https.listen"), " ");
+    }
+    static string DEFAULT = "8088";
+    SrsConfDirective* conf = get_https_stream();
+    if (!conf) {
+        ports.push_back(DEFAULT);
+        return ports;
+    }
+    
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        ports.push_back(conf->args.at(i));
+    }
+    
+    return ports;
 }
 
 string SrsConfig::get_https_stream_ssl_key()

@@ -1031,6 +1031,10 @@ public:
     virtual bool get_http_api_enabled();
     // Get the http api listen port.
     virtual std::string get_http_api_listen();
+    // Get the http api listen port.
+    // user can specifies multiple listen ports,
+    // each args of directive is a listen port.
+    virtual std::vector<std::string> get_http_apis_listens();
     // Whether enable crossdomain for http api.
     virtual bool get_http_api_crossdomain();
     // Whether enable the HTTP RAW API.
@@ -1053,6 +1057,7 @@ private:
 public:
     virtual bool get_https_api_enabled();
     virtual std::string get_https_api_listen();
+    virtual std::vector<std::string> get_https_apis_listens();
     virtual std::string get_https_api_ssl_key();
     virtual std::string get_https_api_ssl_cert();
 // http stream section
@@ -1065,6 +1070,10 @@ public:
     virtual bool get_http_stream_enabled();
     // Get the http stream listen port.
     virtual std::string get_http_stream_listen();
+    // Get the http stream listen port.
+    // user can specifies multiple listen ports,
+    // each args of directive is a listen port.
+    virtual std::vector<std::string> get_http_streams_listens();
     // Get the http stream root dir.
     virtual std::string get_http_stream_dir();
     // Whether enable crossdomain for http static and stream server.
@@ -1075,6 +1084,7 @@ private:
 public:
     virtual bool get_https_stream_enabled();
     virtual std::string get_https_stream_listen();
+    virtual std::vector<std::string> get_https_streams_listens();
     virtual std::string get_https_stream_ssl_key();
     virtual std::string get_https_stream_ssl_cert();
 public:

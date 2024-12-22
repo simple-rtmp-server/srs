@@ -493,6 +493,13 @@ srs_error_t SrsServer::initialize()
     bool stream = _srs_config->get_http_stream_enabled();
     string http_listen = _srs_config->get_http_stream_listen();
     string https_listen = _srs_config->get_https_stream_listen();
+    vector<string> server_vec = get_http_streams_listens();
+    vector<string> servers_vec = get_https_streams_listens();
+    std::sort(server_vec.begin(), server_vec.end());
+    std::sort(servers_vec.begin(), servers_vec.end());
+
+
+
 
 #ifdef SRS_RTC
     bool rtc = _srs_config->get_rtc_server_enabled();
@@ -513,6 +520,36 @@ srs_error_t SrsServer::initialize()
     bool api = _srs_config->get_http_api_enabled();
     string api_listen = _srs_config->get_http_api_listen();
     string apis_listen = _srs_config->get_https_api_listen();
+    vector<string> api_vec = get_http_apis_listens();
+    vector<string> apis_vec = get_https_apis_listens();
+
+    std::sort(api_vec.begin(), api_vec.end());
+    std::sort(apis_vec.begin(), apis_vec.end());
+
+    std::vector<string> intersection_result;
+    std::vector<string> intersections_result;
+
+    std::set_intersection(
+        api_vec.begin(), api_vec.end(),
+        server_vec.begin(), server_vec.end(),
+        std::back_inserter(intersection_result)
+    );
+
+    if (intersection_result.size() == 0)
+    {
+        reuse_api_over_server_ = false;
+    }
+    else if (intersection_result.size() == api_vec.size())
+    {
+        reuse_api_over_server_ = true;
+    }
+    else
+    {
+        return srs_error_wrap(err, "http api initialize");
+    }
+
+    
+
     if (stream && api && api_listen == http_listen && apis_listen == https_listen) {
         srs_trace("API reuses http=%s and https=%s server", http_listen.c_str(), https_listen.c_str());
         reuse_api_over_server_ = true;
