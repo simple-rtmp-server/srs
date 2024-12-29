@@ -512,9 +512,9 @@ srs_error_t SrsServer::initialize()
             reuse_rtc_over_server_ = true;
         }
     }
-    for (int idx = 0; idx < server_vecs.size(); idx++)
+    for (int idx = 0; idx < servers_vec.size(); idx++)
     {
-        string https_listen = server_vec[idx];
+        string https_listen = servers_vec[idx];
         if (stream && rtc && rtc_tcp && https_listen == rtc_listen) {
             srs_trace("WebRTC tcp=%s reuses https=%s server", rtc_listen.c_str(), https_listen.c_str());
             reuse_rtc_over_server_ = true;
