@@ -504,15 +504,17 @@ srs_error_t SrsServer::initialize()
     bool rtc_tcp = _srs_config->get_rtc_server_tcp_enabled();
     string rtc_listen = srs_int2str(_srs_config->get_rtc_server_tcp_listen());
     // If enabled and listen is the same value, resue port for WebRTC over TCP.
-    for (string http_listen : server_vec)
+    for (int idx = 0; idx < server_vec.size(); idx++)
     {
+        string http_listen = server_vec[idx];
         if (stream && rtc && rtc_tcp && http_listen == rtc_listen) {
             srs_trace("WebRTC tcp=%s reuses http=%s server", rtc_listen.c_str(), http_listen.c_str());
             reuse_rtc_over_server_ = true;
         }
     }
-    for (string https_listen : servers_vec)
+    for (int idx = 0; idx < server_vecs.size(); idx++)
     {
+        string https_listen = server_vec[idx];
         if (stream && rtc && rtc_tcp && https_listen == rtc_listen) {
             srs_trace("WebRTC tcp=%s reuses https=%s server", rtc_listen.c_str(), https_listen.c_str());
             reuse_rtc_over_server_ = true;
@@ -554,12 +556,14 @@ srs_error_t SrsServer::initialize()
     if (stream && api && isFullyContainedHttp && isFullyContainedHttps)
     {
         srs_trace("API reuses http and https server");
-        for (string http_listen : intersection_result)
+        for (int idx = 0; idx < intersection_result.size(); idx++)
         {
+            string http_listen = intersection_result[idx];
             srs_trace("API reuses http=%s server", http_listen.c_str());
         }
-        for (string https_listen : intersections_result)
+        for (int idx = 0; idx < intersections_result.size(); idx++)
         {
+            string https_listen = intersections_result[idx];
             srs_trace("API reuses https=%s server", https_listen.c_str());
         }
         reuse_api_over_server_ = true;
