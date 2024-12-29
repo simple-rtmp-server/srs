@@ -7741,6 +7741,10 @@ std::vector<std::string> SrsConfig::get_http_apis_listens()
         return ports;
     }
     conf = conf->get("listen");
+    if (!conf) {
+        ports.push_back(DEFAULT);
+        return ports;
+    }
     for (int i = 0; i < (int)conf->args.size(); i++) {
         ports.push_back(conf->args.at(i));
     }
@@ -7969,6 +7973,10 @@ std::vector<std::string> SrsConfig::get_https_apis_listens()
         return ports;
     }
     conf = conf->get("listen");
+    if (!conf) {
+        ports.push_back(DEFAULT);
+        return ports;
+    }
     for (int i = 0; i < (int)conf->args.size(); i++) {
         ports.push_back(conf->args.at(i));
     }
@@ -8405,6 +8413,10 @@ std::vector<std::string> SrsConfig::get_http_streams_listens()
         return ports;
     }
     conf = conf->get("listen");
+    if (!conf) {
+        ports.push_back(DEFAULT);
+        return ports;
+    }
     for (int i = 0; i < (int)conf->args.size(); i++) {
         ports.push_back(conf->args.at(i));
     }
@@ -8530,6 +8542,10 @@ std::vector<std::string> SrsConfig::get_https_streams_listens()
         return ports;
     }
     conf = conf->get("listen");
+    if (!conf) {
+        ports.push_back(DEFAULT);
+        return ports;
+    }
     for (int i = 0; i < (int)conf->args.size(); i++) {
         ports.push_back(conf->args.at(i));
     }
