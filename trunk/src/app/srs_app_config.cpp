@@ -2533,10 +2533,10 @@ srs_error_t SrsConfig::check_normal_config()
         );
 
         bool isNotSameHttp = intersection_result.size() == 0;
-        bool isFullyContainedHttp = intersection_result.size() != 0 && intersection_result.size() == api_vec.size();
+        bool isFullyContainedHttp = !isNotSameHttp && intersection_result.size() == api_vec.size();
         if (!isNotSameHttp && !isFullyContainedHttp)
         {
-            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http api and server have a intersection, but http server doesn't fully contain http api");
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http api and http server intersect in functionality, but an http server does not fully encapsulate an http api");
         }
         vector<string> apis_vec = get_https_apis_listens();
         vector<string> servers_vec = get_https_streams_listens();
@@ -2550,10 +2550,10 @@ srs_error_t SrsConfig::check_normal_config()
         );
 
         bool isNotSameHttps = intersections_result.size() == 0;
-        bool isFullyContainedHttps = intersections_result.size() != 0 && intersections_result.size() == apis_vec.size();
+        bool isFullyContainedHttps = !isNotSameHttps && intersections_result.size() == apis_vec.size();
         if (!isNotSameHttps && !isFullyContainedHttps)
         {
-            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "https api and server have a intersection, but https server doesn't fully contain https api");
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "https api and https server intersect in functionality, but an https server does not fully encapsulate an https api");
         }
         if (!isNotSameHttp && isNotSameHttps) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same http, https api != server");

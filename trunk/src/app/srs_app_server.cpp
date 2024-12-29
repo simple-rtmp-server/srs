@@ -544,13 +544,13 @@ srs_error_t SrsServer::initialize()
         std::back_inserter(intersections_result)
     );
     bool isNotSameHttp = intersection_result.size() == 0;
-    bool isFullyContainedHttp = intersection_result.size() != 0 && intersection_result.size() == api_vec.size();
+    bool isFullyContainedHttp = !isNotSameHttp && intersection_result.size() == api_vec.size();
     bool isNotSameHttps = intersections_result.size() == 0;
-    bool isFullyContainedHttps = intersections_result.size() != 0 && intersections_result.size() == apis_vec.size();
+    bool isFullyContainedHttps = !isNotSameHttps && intersections_result.size() == apis_vec.size();
 
     if ((!isNotSameHttp && !isFullyContainedHttp) || (!isNotSameHttps && !isFullyContainedHttps))
     {
-        return srs_error_wrap(err, "http api and http server have a intersection. but http server doesn't fully contain http api");
+        return srs_error_wrap(err, "http api and http server intersect in functionality, but an http server does not fully encapsulate an http api");
     }
     
     if (stream && api && isFullyContainedHttp && isFullyContainedHttps)
