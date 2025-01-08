@@ -215,6 +215,7 @@ private:
 public:
     // Update the authentication information in request.
     virtual void update_auth(SrsRequest* r);
+    virtual void update_stream_die_at();
 private:
     // The stream source changed.
     virtual srs_error_t on_source_changed();

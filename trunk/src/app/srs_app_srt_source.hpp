@@ -173,6 +173,7 @@ public:
     virtual SrsContextId pre_source_id();
     // Update the authentication information in request.
     virtual void update_auth(SrsRequest* r);
+    virtual void update_stream_die_at();
 public:
     void set_bridge(ISrsStreamBridge* bridge);
 public:

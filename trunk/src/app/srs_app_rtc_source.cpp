@@ -287,6 +287,7 @@ srs_error_t SrsRtcSourceManager::notify(int event, srs_utime_t interval, srs_uti
 
         // When source expired, remove it.
         // @see https://github.com/ossrs/srs/issues/713
+        SrsLocker(lock);
         if (source->stream_is_dead()) {
             SrsContextId cid = source->source_id();
             if (cid.empty()) cid = source->pre_source_id();
@@ -318,6 +319,7 @@ srs_error_t SrsRtcSourceManager::fetch_or_create(SrsRequest* r, SrsSharedPtr<Srs
         // for origin auth is on, the token in request maybe invalid,
         // and we only need to update the token of request, it's simple.
         source->update_auth(r);
+        source->update_stream_die_at();
         pps = source;
 
         return err;
@@ -387,7 +389,7 @@ SrsRtcSource::SrsRtcSource()
 #endif
 
     pli_for_rtmp_ = pli_elapsed_ = 0;
-    stream_die_at_ = 0;
+    stream_die_at_ = srs_get_system_time();
 }
 
 SrsRtcSource::~SrsRtcSource()
@@ -493,6 +495,21 @@ void SrsRtcSource::update_auth(SrsRequest* r)
     req->update_auth(r);
 }
 
+void SrsRtcSource::update_stream_die_at()
+{
+    // already publishing
+    if (!is_created_) {
+        return;
+    }
+
+    // has consumers
+    if (!consumers.empty()) {
+        return;
+    }
+
+    stream_die_at_ = srs_get_system_time();
+}
+
 srs_error_t SrsRtcSource::on_source_changed()
 {
     srs_error_t err = srs_success;
@@ -554,7 +571,7 @@ srs_error_t SrsRtcSource::create_consumer(SrsRtcConsumer*& consumer)
     consumer = new SrsRtcConsumer(this);
     consumers.push_back(consumer);
 
-    stream_die_at_ = 0;
+    // stream_die_at_ = 0;
 
     // TODO: FIXME: Implements edge cluster.
 
