@@ -7127,44 +7127,6 @@ string SrsConfig::get_hls_on_error(string vhost)
     return conf->arg0();
 }
 
-string SrsConfig::get_hls_acodec(string vhost)
-{
-    SRS_OVERWRITE_BY_ENV_STRING("srs.vhost.hls.hls_acodec"); // SRS_VHOST_HLS_HLS_ACODEC
-
-    static string DEFAULT = "aac";
-    
-    SrsConfDirective* conf = get_hls(vhost);
-    if (!conf) {
-        return DEFAULT;
-    }
-    
-    conf = conf->get("hls_acodec");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
-    }
-    
-    return conf->arg0();
-}
-
-string SrsConfig::get_hls_vcodec(string vhost)
-{
-    SRS_OVERWRITE_BY_ENV_STRING("srs.vhost.hls.hls_vcodec"); // SRS_VHOST_HLS_HLS_VCODEC
-
-    static string DEFAULT = "h264";
-    
-    SrsConfDirective* conf = get_hls(vhost);
-    if (!conf) {
-        return DEFAULT;
-    }
-    
-    conf = conf->get("hls_vcodec");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
-    }
-    
-    return conf->arg0();
-}
-
 int SrsConfig::get_vhost_hls_nb_notify(string vhost)
 {
     SRS_OVERWRITE_BY_ENV_INT("srs.vhost.hls.hls_nb_notify"); // SRS_VHOST_HLS_HLS_NB_NOTIFY

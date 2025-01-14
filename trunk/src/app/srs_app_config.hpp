@@ -957,10 +957,6 @@ public:
     // The ignore will ignore error and disable hls.
     // The disconnect will disconnect publish connection.
     virtual std::string get_hls_on_error(std::string vhost);
-    // Get the HLS default audio codec.
-    virtual std::string get_hls_acodec(std::string vhost);
-    // Get the HLS default video codec.
-    virtual std::string get_hls_vcodec(std::string vhost);
     // Whether cleanup the old ts files.
     virtual bool get_hls_cleanup(std::string vhost);
     // The timeout in srs_utime_t to dispose the hls.

@@ -3716,13 +3716,11 @@ VOID TEST(ConfigMainTest, CheckVhostConfig5)
 
     if (true) {
         MockSrsConfig conf;
-        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{hls{hls_td_ratio 2.1;hls_aof_ratio 3.1;hls_window 10;hls_on_error xxx;hls_acodec xxx2;hls_vcodec xxx3;hls_nb_notify 5;hls_dts_directly off;hls_cleanup off;hls_dispose 10;hls_wait_keyframe off;}}"));
+        HELPER_ASSERT_SUCCESS(conf.parse(_MIN_OK_CONF "vhost ossrs.net{hls{hls_td_ratio 2.1;hls_aof_ratio 3.1;hls_window 10;hls_on_error xxx;hls_nb_notify 5;hls_dts_directly off;hls_cleanup off;hls_dispose 10;hls_wait_keyframe off;}}"));
         EXPECT_EQ(2.1, conf.get_hls_td_ratio("ossrs.net"));
         EXPECT_EQ(3.1, conf.get_hls_aof_ratio("ossrs.net"));
         EXPECT_EQ(10*SRS_UTIME_SECONDS, conf.get_hls_window("ossrs.net"));
         EXPECT_STREQ("xxx", conf.get_hls_on_error("ossrs.net").c_str());
-        EXPECT_STREQ("xxx2", conf.get_hls_acodec("ossrs.net").c_str());
-        EXPECT_STREQ("xxx3", conf.get_hls_vcodec("ossrs.net").c_str());
         EXPECT_EQ(5, conf.get_vhost_hls_nb_notify("ossrs.net"));
         EXPECT_FALSE(conf.get_vhost_hls_dts_directly("ossrs.net"));
         EXPECT_FALSE(conf.get_hls_cleanup("ossrs.net"));
@@ -5010,12 +5008,6 @@ VOID TEST(ConfigEnvTest, CheckEnvValuesHls)
 
         SrsSetEnvConfig(hls_entry_prefix, "SRS_VHOST_HLS_HLS_ENTRY_PREFIX", "yyy");
         EXPECT_STREQ("yyy", conf.get_hls_entry_prefix("__defaultVhost__").c_str());
-
-        SrsSetEnvConfig(hls_acodec, "SRS_VHOST_HLS_HLS_ACODEC", "yyy2");
-        EXPECT_STREQ("yyy2", conf.get_hls_acodec("__defaultVhost__").c_str());
-
-        SrsSetEnvConfig(hls_vcodec, "SRS_VHOST_HLS_HLS_VCODEC", "yyy3");
-        EXPECT_STREQ("yyy3", conf.get_hls_vcodec("__defaultVhost__").c_str());
 
         SrsSetEnvConfig(hls_cleanup, "SRS_VHOST_HLS_HLS_CLEANUP", "off");
         EXPECT_FALSE(conf.get_hls_cleanup("__defaultVhost__"));

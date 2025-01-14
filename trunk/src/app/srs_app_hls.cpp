@@ -396,36 +396,14 @@ srs_error_t SrsHlsMuxer::segment_open()
     srs_assert(!current);
     
     // load the default acodec from config.
-    SrsAudioCodecId default_acodec = SrsAudioCodecIdAAC;
-    if (true) {
-        std::string default_acodec_str = _srs_config->get_hls_acodec(req->vhost);
-        if (default_acodec_str == "mp3") {
-            default_acodec = SrsAudioCodecIdMP3;
-        } else if (default_acodec_str == "aac") {
-            default_acodec = SrsAudioCodecIdAAC;
-        } else if (default_acodec_str == "an") {
-            default_acodec = SrsAudioCodecIdDisabled;
-        } else {
-            srs_warn("hls: use aac for other codec=%s", default_acodec_str.c_str());
-        }
-    }
+    SrsAudioCodecId default_acodec = SrsAudioCodecIdDisabled;
+
     // Now that we know the latest audio codec in stream, use it.
     if (latest_acodec_ != SrsAudioCodecIdForbidden) default_acodec = latest_acodec_;
     
     // load the default vcodec from config.
-    SrsVideoCodecId default_vcodec = SrsVideoCodecIdAVC;
-    if (true) {
-        std::string default_vcodec_str = _srs_config->get_hls_vcodec(req->vhost);
-        if (default_vcodec_str == "h264") {
-            default_vcodec = SrsVideoCodecIdAVC;
-        } else if (default_vcodec_str == "h265") {
-            default_vcodec = SrsVideoCodecIdHEVC;
-        } else if (default_vcodec_str == "vn") {
-            default_vcodec = SrsVideoCodecIdDisabled;
-        } else {
-            srs_warn("hls: use h264 for other codec=%s", default_vcodec_str.c_str());
-        }
-    }
+    SrsVideoCodecId default_vcodec = SrsVideoCodecIdDisabled;
+
     // Now that we know the latest video codec in stream, use it.
     if (latest_vcodec_ != SrsVideoCodecIdForbidden) default_vcodec = latest_vcodec_;
 
