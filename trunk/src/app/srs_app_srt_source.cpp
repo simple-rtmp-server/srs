@@ -137,6 +137,7 @@ srs_error_t SrsSrtSourceManager::notify(int event, srs_utime_t interval, srs_uti
 
         // When source expired, remove it.
         // @see https://github.com/ossrs/srs/issues/713
+        SrsLocker(lock);
         if (source->stream_is_dead()) {
             SrsContextId cid = source->source_id();
             if (cid.empty()) cid = source->pre_source_id();
@@ -167,6 +168,7 @@ srs_error_t SrsSrtSourceManager::fetch_or_create(SrsRequest* r, SrsSharedPtr<Srs
         // for origin auth is on, the token in request maybe invalid,
         // and we only need to update the token of request, it's simple.
         source->update_auth(r);
+        source->update_stream_die_at();
         pps = source;
 
         return err;
@@ -900,7 +902,7 @@ SrsSrtSource::SrsSrtSource()
     can_publish_ = true;
     frame_builder_ = NULL;
     bridge_ = NULL;
-    stream_die_at_ = 0;
+    stream_die_at_ = srs_get_system_time();
 }
 
 SrsSrtSource::~SrsSrtSource()
@@ -986,6 +988,20 @@ void SrsSrtSource::update_auth(SrsRequest* r)
     req->update_auth(r);
 }
 
+void SrsSrtSource::update_stream_die_at()
+{
+    if (!can_publish_) {
+        return;
+    }
+
+    // has consumers
+    if (!consumers.empty()) {
+        return;
+    }
+
+    stream_die_at_ = srs_get_system_time();
+}
+
 void SrsSrtSource::set_bridge(ISrsStreamBridge* bridge)
 {
     srs_freep(bridge_);
@@ -1002,7 +1018,7 @@ srs_error_t SrsSrtSource::create_consumer(SrsSrtConsumer*& consumer)
     consumer = new SrsSrtConsumer(this);
     consumers.push_back(consumer);
 
-    stream_die_at_ = 0;
+    // stream_die_at_ = 0;
 
     return err;
 }

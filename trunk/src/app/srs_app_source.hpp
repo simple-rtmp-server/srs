@@ -563,6 +563,7 @@ public:
     virtual bool inactive();
     // Update the authentication information in request.
     virtual void update_auth(SrsRequest* r);
+    virtual void update_stream_die_at();
 public:
     virtual bool can_publish(bool is_edge);
     virtual srs_error_t on_meta_data(SrsCommonMessage* msg, SrsOnMetaDataPacket* metadata);

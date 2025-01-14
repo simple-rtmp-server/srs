@@ -1785,6 +1785,7 @@ srs_error_t SrsLiveSourceManager::fetch_or_create(SrsRequest* r, ISrsLiveSourceH
         // for origin auth is on, the token in request maybe invalid,
         // and we only need to update the token of request, it's simple.
         source->update_auth(r);
+        source->update_stream_die_at();
         pps = source;
         return err;
     }
@@ -1861,6 +1862,7 @@ srs_error_t SrsLiveSourceManager::notify(int event, srs_utime_t interval, srs_ut
 
         // When source expired, remove it.
         // @see https://github.com/ossrs/srs/issues/713
+        SrsLocker(lock);
         if (source->stream_is_dead()) {
             SrsContextId cid = source->source_id();
             if (cid.empty()) cid = source->pre_source_id();
@@ -1887,7 +1889,7 @@ SrsLiveSource::SrsLiveSource()
     mix_queue = new SrsMixQueue();
     
     can_publish_ = true;
-    stream_die_at_ = 0;
+    stream_die_at_ = srs_get_system_time(); //SrsLiveSource should have a die time.
     publisher_idle_at_ = 0;
 
     handler = NULL;
@@ -2157,6 +2159,21 @@ bool SrsLiveSource::inactive()
 void SrsLiveSource::update_auth(SrsRequest* r)
 {
     req->update_auth(r);
+}
+
+void SrsLiveSource::update_stream_die_at()
+{
+    // already publishing
+    if (!can_publish_ || !publish_edge->can_publish()) {
+        return;
+    }
+
+    // has consumers
+    if (!consumers.empty()) {
+        return;
+    }
+
+    stream_die_at_ = srs_get_system_time();
 }
 
 bool SrsLiveSource::can_publish(bool is_edge)
@@ -2676,8 +2693,7 @@ srs_error_t SrsLiveSource::create_consumer(SrsLiveConsumer*& consumer)
     consumer = new SrsLiveConsumer(this);
     consumers.push_back(consumer);
 
-    // There are more than one consumer, so reset the timeout.
-    stream_die_at_ = 0;
+    // There are more than one consumer, so reset the publisher idle timeout.
     publisher_idle_at_ = 0;
     
     return err;
