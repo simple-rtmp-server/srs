@@ -1834,7 +1834,12 @@ srs_error_t SrsRtcFrameBuilder::packet_video_rtmp(const uint16_t start, const ui
             if (fua_payload->start) {
                 nalu_len = fua_payload->size + 1;
                 //skip 4 bytes to write nalu_len future
-                payload.skip(4);
+                if (fua_payload->end) {
+                    //only one FU-A
+                    payload.write_4bytes(nalu_len);
+                } else {
+                    payload.skip(4);
+                }
                 payload.write_1bytes(fua_payload->nri | fua_payload->nalu_type);
                 payload.write_bytes(fua_payload->payload, fua_payload->size);
             } else {
