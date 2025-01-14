@@ -5567,6 +5567,9 @@ int SrsConfig::get_global_chunk_size()
 }
 
 bool SrsConfig::get_forward_enabled(string vhost) {
+
+    SRS_OVERWRITE_BY_ENV_BOOL("srs.vhost.forward.enabled"); // SRS_VHOST_FORWARD_ENABLED
+
     static bool DEFAULT = false;
 
     SrsConfDirective* conf = get_vhost(vhost);
@@ -5579,6 +5582,9 @@ bool SrsConfig::get_forward_enabled(string vhost) {
 
 bool SrsConfig::get_forward_enabled(SrsConfDirective* vhost)
 {
+
+    SRS_OVERWRITE_BY_ENV_BOOL("srs.vhost.forward.enabled"); // SRS_VHOST_FORWARD_ENABLED
+
     static bool DEFAULT = false;
 
     SrsConfDirective* conf = vhost->get("forward");
@@ -5611,6 +5617,9 @@ SrsConfDirective* SrsConfig::get_forwards(string vhost)
 
 SrsConfDirective* SrsConfig::get_forward_backend(string vhost)
 {
+
+    SRS_OVERWRITE_BY_ENV_DIRECTIVE("srs.vhost.forward.backend"); // SRS_VHOST_FORWARD_BACKEND
+
     SrsConfDirective* conf = get_vhost(vhost);
     if (!conf) {
         return NULL;
