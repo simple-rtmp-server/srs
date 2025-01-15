@@ -4,10 +4,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -97,6 +100,35 @@ func (v *SRSServer) Format(f fmt.State, c rune) {
 	}
 }
 
+func (v *SRSServer) ApiRequest(ctx context.Context, r *http.Request, body []byte) ([]byte, error) {
+	var url string
+	// if the v.API[0] contains ip address, e.g. 127.0.0.1:1985, then use it as the ip address
+	if strings.Contains(v.API[0], ":") && strings.Index(v.API[0], ":") > 0 {
+		url = "http://" + v.API[0] + r.URL.Path
+	} else {
+		url = "http://" + v.IP + ":" + v.API[0] + r.URL.Path
+	}
+
+	if r.URL.RawQuery != "" {
+		url += "?" + r.URL.RawQuery
+	}
+
+	if req, err := http.NewRequestWithContext(ctx, r.Method, url, bytes.NewReader(body)); err != nil {
+		return nil, errors.Wrapf(err, "create request to %v", url)
+	} else if res, err := http.DefaultClient.Do(req); err != nil {
+		return nil, errors.Wrapf(err, "send request to %v", url)
+	} else {
+		defer res.Body.Close()
+		if ret, err := io.ReadAll(res.Body); err != nil {
+			return nil, errors.Wrapf(err, "read http respose error")
+		} else if !isHttpStatusOK(res.StatusCode) {
+			return ret, errors.Errorf("http response status code %v", res.StatusCode)
+		} else {
+			return ret, nil
+		}
+	}
+}
+
 func NewSRSServer(opts ...func(*SRSServer)) *SRSServer {
 	v := &SRSServer{}
 	for _, opt := range opts {
@@ -158,6 +190,8 @@ type SRSLoadBalancer interface {
 	StoreWebRTC(ctx context.Context, streamURL string, value *RTCConnection) error
 	// Load the WebRTC streaming by ufrag, the ICE username.
 	LoadWebRTCByUfrag(ctx context.Context, ufrag string) (*RTCConnection, error)
+	// proxy http api to srs
+	ProxyHTTPAPI(ctx context.Context, w http.ResponseWriter, r *http.Request) error
 }
 
 // srsLoadBalancer is the global SRS load balancer.
@@ -165,6 +199,7 @@ var srsLoadBalancer SRSLoadBalancer
 
 // srsMemoryLoadBalancer stores state in memory.
 type srsMemoryLoadBalancer struct {
+	*SrsApiProxy
 	// All available SRS servers, key is server ID.
 	servers sync.Map[string, *SRSServer]
 	// The picked server to servce client by specified stream URL, key is stream url.
@@ -287,7 +322,17 @@ func (v *srsMemoryLoadBalancer) LoadWebRTCByUfrag(ctx context.Context, ufrag str
 	}
 }
 
+func (v *srsMemoryLoadBalancer) ProxyHTTPAPI(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	services := make([]*SRSServer, v.servers.Size())
+	v.servers.Range(func(_ string, value *SRSServer) bool {
+		services = append(services, value)
+		return true
+	})
+	return v.proxySrsAPI(ctx, services, w, r)
+}
+
 type srsRedisLoadBalancer struct {
+	*SrsApiProxy
 	// The redis client sdk.
 	rdb *redis.Client
 }
@@ -528,6 +573,40 @@ func (v *srsRedisLoadBalancer) LoadWebRTCByUfrag(ctx context.Context, ufrag stri
 	return &actual, nil
 }
 
+func (v *srsRedisLoadBalancer) ProxyHTTPAPI(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	defer r.Body.Close()
+	// Query all servers from redis, in json string.
+	var serverKeys []string
+	if b, err := v.rdb.Get(ctx, v.redisKeyServers()).Bytes(); err == nil {
+		if err := json.Unmarshal(b, &serverKeys); err != nil {
+			return errors.Wrapf(err, "unmarshal key=%v servers %v", v.redisKeyServers(), string(b))
+		}
+	}
+
+	// No server found, failed.
+	if len(serverKeys) == 0 {
+		err := errors.New("servers empty")
+		apiError(ctx, w, r, err, http.StatusInternalServerError)
+		return err
+	}
+
+	// TODO get all SRSServer
+	var srsServers []*SRSServer
+
+	for _, key := range serverKeys {
+		var server SRSServer
+		if b, err := v.rdb.Get(ctx, key).Bytes(); err == nil {
+			if err := json.Unmarshal(b, &server); err != nil {
+				return errors.Wrapf(err, "unmarshal servers %v, %v", key, string(b))
+			}
+			srsServers = append(srsServers, &server)
+			logger.Df(ctx, "srsServer: %v", server)
+		}
+	}
+
+	return v.proxySrsAPI(ctx, srsServers, w, r)
+}
+
 func (v *srsRedisLoadBalancer) redisKeyUfrag(ufrag string) string {
 	return fmt.Sprintf("srs-proxy-ufrag:%v", ufrag)
 }
@@ -549,5 +628,5 @@ func (v *srsRedisLoadBalancer) redisKeyServer(serverID string) string {
 }
 
 func (v *srsRedisLoadBalancer) redisKeyServers() string {
-	return fmt.Sprintf("srs-proxy-all-servers")
+	return "srs-proxy-all-servers"
 }

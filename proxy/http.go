@@ -198,7 +198,7 @@ func (v *HTTPFlvTsConnection) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	ctx := logger.WithContext(v.ctx)
 
 	if err := v.serve(ctx, w, r); err != nil {
-		apiError(ctx, w, r, err)
+		apiError(ctx, w, r, err, http.StatusInternalServerError)
 	} else {
 		logger.Df(ctx, "HTTP client done")
 	}
@@ -318,7 +318,7 @@ func (v *HLSPlayStream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if err := v.serve(v.ctx, w, r); err != nil {
-		apiError(v.ctx, w, r, err)
+		apiError(v.ctx, w, r, err, http.StatusInternalServerError)
 	} else {
 		logger.Df(v.ctx, "HLS client %v for %v with %v done",
 			v.SRSProxyBackendHLSID, v.StreamURL, r.URL.Path)
