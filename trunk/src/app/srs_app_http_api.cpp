@@ -786,7 +786,7 @@ srs_error_t SrsGoApiStreams::serve_http(ISrsHttpResponseWriter* w, ISrsHttpMessa
             std::string rstart = r->query_get("start");
             std::string rcount = r->query_get("count");
             int start = srs_max(0, atoi(rstart.c_str()));
-            int count = srs_max(10, atoi(rcount.c_str()));
+            int count = srs_max(100, atoi(rcount.c_str()));
             if ((err = stat->dumps_streams(data, start, count)) != srs_success) {
                 int code = srs_error_code(err);
                 srs_error_reset(err);
@@ -847,7 +847,7 @@ srs_error_t SrsGoApiClients::serve_http(ISrsHttpResponseWriter* w, ISrsHttpMessa
             std::string rstart = r->query_get("start");
             std::string rcount = r->query_get("count");
             int start = srs_max(0, atoi(rstart.c_str()));
-            int count = srs_max(10, atoi(rcount.c_str()));
+            int count = srs_max(100, atoi(rcount.c_str()));
             if ((err = stat->dumps_clients(data, start, count)) != srs_success) {
                 int code = srs_error_code(err);
                 srs_error_reset(err);
