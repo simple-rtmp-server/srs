@@ -88,8 +88,8 @@ SrsStatisticStream::SrsStatisticStream()
     
     has_audio = false;
     acodec = SrsAudioCodecIdReserved1;
-    asample_rate = SrsAudioSampleRateReserved;
-    asound_type = SrsAudioChannelsReserved;
+    asample_rate = 0;
+    asound_type = 0;
     aac_object = SrsAacObjectTypeReserved;
     width = 0;
     height = 0;
@@ -168,8 +168,8 @@ srs_error_t SrsStatisticStream::dumps(SrsJsonObject* obj)
         obj->set("audio", audio);
         
         audio->set("codec", SrsJsonAny::str(srs_audio_codec_id2str(acodec).c_str()));
-        audio->set("sample_rate", SrsJsonAny::integer(srs_flv_srates[asample_rate]));
-        audio->set("channel", SrsJsonAny::integer(asound_type + 1));
+        audio->set("sample_rate", SrsJsonAny::integer(asample_rate));
+        audio->set("channel", SrsJsonAny::integer(asound_type));
         audio->set("profile", SrsJsonAny::str(srs_aac_object2str(aac_object).c_str()));
     }
     
@@ -376,7 +376,7 @@ srs_error_t SrsStatistic::on_video_info(SrsRequest* req, SrsVideoCodecId vcodec,
     return err;
 }
 
-srs_error_t SrsStatistic::on_audio_info(SrsRequest* req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate, SrsAudioChannels asound_type, SrsAacObjectType aac_object)
+srs_error_t SrsStatistic::on_audio_info(SrsRequest* req, SrsAudioCodecId acodec, int asample_rate, int asound_type, SrsAacObjectType aac_object)
 {
     srs_error_t err = srs_success;
     

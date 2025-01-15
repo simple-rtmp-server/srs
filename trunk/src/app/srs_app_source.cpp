@@ -956,15 +956,19 @@ srs_error_t SrsOriginHub::on_audio(SrsSharedPtrMessage* shared_audio)
         
         // when got audio stream info.
         SrsStatistic* stat = SrsStatistic::instance();
-        if ((err = stat->on_audio_info(req_, format->acodec->id, c->sound_rate, c->sound_type, c->aac_object)) != srs_success) {
-            return srs_error_wrap(err, "stat audio");
-        }
+        
 
         if (format->acodec->id == SrsAudioCodecIdMP3) {
+            if ((err = stat->on_audio_info(req_, format->acodec->id, srs_flv_srates[c->sound_rate], flv_sound_types[c->sound_type], c->aac_object)) != srs_success) {
+                return srs_error_wrap(err, "stat audio");
+            }
             srs_trace("%dB audio sh, codec(%d, %dbits, %dchannels, %dHZ)",
                 msg->size, c->id, flv_sample_sizes[c->sound_size], flv_sound_types[c->sound_type],
                 srs_flv_srates[c->sound_rate]);
         } else {
+            if ((err = stat->on_audio_info(req_, format->acodec->id, srs_aac_srates[c->aac_sample_rate], c->aac_channels, c->aac_object)) != srs_success) {
+                return srs_error_wrap(err, "stat audio");
+            }
             srs_trace("%dB audio sh, codec(%d, profile=%s, %dchannels, %dkbps, %dHZ), flv(%dbits, %dchannels, %dHZ)",
                 msg->size, c->id, srs_aac_object2str(c->aac_object).c_str(), c->aac_channels,
                 c->audio_data_rate / 1000, srs_aac_srates[c->aac_sample_rate],
