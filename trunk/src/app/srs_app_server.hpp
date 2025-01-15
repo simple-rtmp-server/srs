@@ -116,18 +116,18 @@ private:
     bool reuse_api_over_server_;
     // If reusing, WebRTC TCP use the same port of HTTP server.
     bool reuse_rtc_over_server_;
-    // RTMP stream listeners, over TCP.
+    // RTMP stream listeners, over TCP. 
     SrsMultipleTcpListeners* rtmp_listener_;
     // HTTP API listener, over TCP. Please note that it might reuse with stream listener.
-    SrsTcpListener* api_listener_;
+    SrsMultipleTcpListeners* api_listener_;
     // HTTPS API listener, over TCP. Please note that it might reuse with stream listener.
-    SrsTcpListener* apis_listener_;
+    SrsMultipleTcpListeners* apis_listener_;
     // HTTP server listener, over TCP. Please note that request of both HTTP static and stream are served by this
     // listener, and it might be reused by HTTP API and WebRTC TCP.
-    SrsTcpListener* http_listener_;
+    SrsMultipleTcpListeners* http_listener_;
     // HTTPS server listener, over TCP. Please note that request of both HTTP static and stream are served by this
     // listener, and it might be reused by HTTP API and WebRTC TCP.
-    SrsTcpListener* https_listener_;
+    SrsMultipleTcpListeners* https_listener_;
     // WebRTC over TCP listener. Please note that there is always a UDP listener by RTC server.
     SrsTcpListener* webrtc_listener_;
     // Stream Caster for push over HTTP-FLV.
