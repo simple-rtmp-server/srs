@@ -79,12 +79,14 @@ scApp.controller("CSCConnect", ["$scope", "$location", "MSCApi", "$sc_utility", 
     $scope.server = {
         schema: $sc_server.schema,
         ip: $sc_server.host,
-        port: $sc_server.port
+        port: $sc_server.port,
+        http: $sc_server.http
     };
     $scope.connect = function(){
         $sc_server.schema = $scope.server.schema;
         $sc_server.host = $scope.server.ip;
         $sc_server.port = $scope.server.port;
+        $sc_server.http = $scope.server.http;
 
         MSCApi.versions_get(function(data){
             $sc_utility.log("trace", "连接到SRS" + $scope.server.ip + "成功, SRS/" + data.data.version);
@@ -571,9 +573,8 @@ scApp.filter('sc_filter_style_error', function(){
 scApp.filter('sc_filter_preview_url', ['$sc_server', function($sc_server){
     return function(v){
         var page = $sc_server.schema + `://${$sc_server.host}:${$sc_server.http}/players/srs_player.html`;
-        var http = $sc_server.http[$sc_server.http.length - 1];
         var query = "vhost=" + v.owner.name + "&app=" + v.app + "&stream=" + v.name + ".flv";
-        query += "&server=" + $sc_server.host +"&port=" + http + "&autostart=true&schema=" + $sc_server.schema;
+        query += "&server=" + $sc_server.host +"&port=" + $sc_server.http + "&autostart=true&schema=" + $sc_server.schema;
         return v? page+"?" + query:"javascript:void(0)";
     };
 }]);
@@ -674,6 +675,7 @@ scApp.provider("$sc_server", [function(){
                 query['schema'] = self.schema;
                 query['host'] = self.host;
                 query['port'] = self.port;
+                query['http'] = self.http;
 
                 var queries = [];
                 for (var key in query) {

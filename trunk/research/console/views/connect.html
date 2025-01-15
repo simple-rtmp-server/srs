@@ -28,6 +28,12 @@
                             </div>
                         </div>
                         <div class="control-group">
+                            <label class="control-label" for="sscPort">HTTP端口</label>
+                            <div class="controls">
+                                <input type="text" id="sscHttp" placeholder="SRS HTTP Server Port" ng-model="server.http">
+                            </div>
+                        </div>
+                        <div class="control-group">
                             <div class="controls">
                                 <button type="submit" class="btn" ng-click="connect()">连接到SRS</button>
                             </div>
