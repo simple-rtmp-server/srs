@@ -337,8 +337,13 @@ srs_error_t SrsAudioTranscoder::decode_and_resample(SrsAudioFrame *pkt)
     char err_buf[AV_ERROR_MAX_STRING_SIZE] = {0};
     int error = avcodec_send_packet(dec_, dec_packet_);
     if (error < 0) {
-        return srs_error_new(ERROR_RTC_RTP_MUXER, "submit to dec(%d,%s)", error,
-            av_make_error_string(err_buf, AV_ERROR_MAX_STRING_SIZE, error));
+        char* e_str = av_make_error_string(err_buf, AV_ERROR_MAX_STRING_SIZE, error);
+        srs_warn("audio dec error(%d, %s)", error, e_str);
+        // https://github.com/ossrs/srs/issues/4224
+        // ignore the AVERROR_INVALIDDATA error.
+        if (error != AVERROR_INVALIDDATA) {
+            return srs_error_new(ERROR_RTC_RTP_MUXER, "submit to dec(%d,%s)", error, e_str);
+        }
     }
 
     new_pkt_pts_ = pkt->dts + pkt->cts;
