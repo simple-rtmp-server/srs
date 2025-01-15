@@ -232,7 +232,7 @@ public:
 };
 
 // For WebRTC over TCP.
-class SrsRtcTcpConn : public ISrsConnection, public ISrsCoroutineHandler, public ISrsExecutorHandler
+class SrsRtcTcpConn : public ISrsConnection, public ISrsCoroutineHandler, public ISrsExecutorHandler, public ISrsDisposingHandler
 {
 private:
     // Because session references to this object, so we should directly use the session ptr.
@@ -277,6 +277,10 @@ public:
 // Interface ISrsCoroutineHandler
 public:
     virtual srs_error_t cycle();
+// Interface ISrsDisposingHandler
+public:
+    virtual void on_before_dispose(ISrsResource* c);
+    virtual void on_disposing(ISrsResource* c);
 private:
     virtual srs_error_t do_cycle();
     srs_error_t handshake();
